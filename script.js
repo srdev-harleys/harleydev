@@ -77,8 +77,9 @@ function renderApplications(container, applications = []) {
 
   applications.forEach((app) => {
     const isOnline = (app.status || '').toLowerCase() === 'online';
+    const isFeatured = !!app.featured;
     const card = document.createElement('a');
-    card.className = 'app-card';
+    card.className = 'app-card' + (isFeatured ? ' is-featured' : '');
     card.href = app.url || '#';
     card.target = '_blank';
     card.rel = 'noopener noreferrer';
@@ -86,6 +87,7 @@ function renderApplications(container, applications = []) {
     card.setAttribute('aria-label', `Launch ${app.name || 'application'}`);
 
     card.innerHTML = `
+      ${isFeatured ? '<span class="app-card__ribbon">Primary</span>' : ''}
       <div class="app-card__head">
         <div class="app-card__icon" aria-hidden="true">${getIcon(app.icon)}</div>
         <span class="status-pill ${isOnline ? 'is-online' : 'is-offline'}">
