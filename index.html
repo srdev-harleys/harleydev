@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- ============================================================
+       SEO META TAGS
+       ============================================================ -->
+  <title>Harleys Fine Baking ERP — Internal Testing Environment</title>
+  <meta name="description" content="Secure access portal to the Harleys Fine Baking ERP testing environment. Internal use only." />
+  <meta name="keywords" content="Harleys Fine Baking, ERP, Odoo 19, Testing Environment, Enterprise" />
+  <meta name="author" content="Harleys Fine Baking ERP Development Team" />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#1E3A5F" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0B1622" media="(prefers-color-scheme: dark)" />
+
+  <!-- ============================================================
+       OPEN GRAPH TAGS
+       ============================================================ -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Harleys Fine Baking ERP" />
+  <meta property="og:title" content="Harleys Fine Baking ERP — Internal Testing Environment" />
+  <meta property="og:description" content="Secure access portal to the Harleys Fine Baking ERP testing environment." />
+  <meta property="og:locale" content="en_US" />
+
+  <!-- ============================================================
+       FAVICON
+       ============================================================ -->
+  <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
+  <link rel="apple-touch-icon" href="assets/favicon.ico" />
+
+  <!-- ============================================================
+       FONTS — Inter (self-hosted fallback handled via system stack)
+       ============================================================ -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- ============================================================
+       STYLES
+       ============================================================ -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <!-- ============================================================
+       PAGE LOADING ANIMATION
+       ============================================================ -->
+  <div id="page-loader" class="page-loader" role="status" aria-label="Loading">
+    <div class="loader-spinner" aria-hidden="true"></div>
+    <span class="loader-text">Initializing environment…</span>
+  </div>
+
+  <!-- ============================================================
+       ANIMATED BACKGROUND GRADIENT
+       ============================================================ -->
+  <div class="bg-gradient" aria-hidden="true"></div>
+  <div class="bg-grid" aria-hidden="true"></div>
+
+  <!-- ============================================================
+       TOP NAVIGATION
+       ============================================================ -->
+  <header class="topnav" role="banner">
+    <div class="topnav__brand">
+      <img src="assets/logo.png" alt="Harleys Fine Baking logo" class="topnav__logo" width="36" height="36" />
+      <span class="topnav__title">Harleys Fine Baking ERP</span>
+      <span class="env-badge" id="env-badge">Testing</span>
+    </div>
+    <div class="topnav__right">
+      <time class="clock" id="clock" datetime="" aria-label="Current date and time">--:--:--</time>
+    </div>
+  </header>
+
+  <!-- ============================================================
+       MAIN CONTENT
+       ============================================================ -->
+  <main class="page" id="main" role="main">
+
+    <!-- ----------------------------------------------------------
+         HERO SECTION
+         ---------------------------------------------------------- -->
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero__logo" aria-hidden="true">
+        <img src="assets/logo.png" alt="" width="120" height="120" />
+      </div>
+      <h1 class="hero__title" id="hero-title">Harleys Fine Baking ERP</h1>
+      <p class="hero__subtitle" id="hero-subtitle">Internal Testing Environment</p>
+      <p class="hero__desc" id="hero-desc">
+        This portal provides secure access to the Harleys Fine Baking ERP testing
+        environment. Only authorized users should access this system.
+      </p>
+
+      <a class="btn-primary" id="launch-btn" href="https://8fvgvhc8-8069.inc1.devtunnels.ms/"
+         target="_blank" rel="noopener noreferrer" role="button">
+        <svg class="btn-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <path fill="currentColor" d="M14 3v2h3.59l-9.3 9.29 1.42 1.42L19 6.41V10h2V3m-2 16H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7h-2Z"/>
+        </svg>
+        <span class="btn-label">Launch ERP</span>
+      </a>
+    </section>
+
+    <!-- ----------------------------------------------------------
+         APPLICATION LAUNCHER CARDS (generated from config.json)
+         ---------------------------------------------------------- -->
+    <section class="apps" aria-labelledby="apps-title">
+      <h2 class="section-title" id="apps-title">Applications</h2>
+      <p class="section-subtitle">Select an application to launch in a new tab.</p>
+      <div class="apps__grid" id="apps-grid" role="list">
+        <!-- Cards injected by script.js -->
+      </div>
+    </section>
+
+    <!-- ----------------------------------------------------------
+         INFORMATION CARDS
+         ---------------------------------------------------------- -->
+    <section class="info" aria-labelledby="info-title">
+      <h2 class="section-title" id="info-title">Environment Information</h2>
+      <div class="info__grid" id="info-grid" role="list">
+        <!-- Cards injected by script.js -->
+      </div>
+    </section>
+  </main>
+
+  <!-- ============================================================
+       FOOTER
+       ============================================================ -->
+  <footer class="footer" role="contentinfo">
+    <div class="footer__brand">
+      <span class="footer__company">Harleys Fine Baking</span>
+      <span class="footer__platform">ERP Platform</span>
+    </div>
+    <div class="footer__meta">
+      <span id="footer-powered">Powered by Odoo 19 Enterprise</span>
+      <span class="footer__dot" aria-hidden="true">•</span>
+      <span id="footer-notice">Designed for Internal Use Only</span>
+    </div>
+  </footer>
+
+  <!-- ============================================================
+       SCRIPTS — Modular, no external libraries
+       ============================================================ -->
+  <script src="script.js"></script>
+</body>
+</html>
