@@ -21,6 +21,14 @@
       "status": "Online",
       "environment": "Testing",
       "featured": true
+    },
+    {
+      "name": "Harleys Projects Board",
+      "url": "https://github.com/users/harleystech/projects/1/views/1",
+      "icon": "board",
+      "status": "Online",
+      "environment": "Task Tracking",
+      "featured": false
     }
   ],
   "infoCards": [
