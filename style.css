@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Harleys Fine Baking ERP — Landing Page Styles
+   Harleys Fine Baking ODOO DEV — Landing Page Styles
    --------------------------------------------------------------------------
    Sections:
    1. Design Tokens (CSS Variables)
@@ -21,25 +21,27 @@
    1. DESIGN TOKENS
    ========================================================================== */
 :root {
-  /* Brand palette */
-  --primary: #1E3A5F;        /* Dark Navy */
-  --primary-700: #16304f;
-  --primary-900: #0B1622;
-  --secondary: #F5F7FA;      /* Light surface */
-  --accent: #D4AF37;         /* Gold */
-  --accent-soft: rgba(212, 175, 55, 0.15);
-  --success: #22C55E;
-  --danger: #EF4444;
+  /* Brand palette — "Alice in Wonderland" tea-party: lavender, rose, soft gold */
+  --primary: #4A3A6B;        /* Deep Lavender / Plum */
+  --primary-700: #3A2C54;
+  --primary-900: #221733;
+  --secondary: #F6F1FB;      /* Lavender Mist */
+  --accent: #B57EDC;         /* Orchid Lavender */
+  --accent-2: #E8A0BF;       /* Tea-Party Rose */
+  --accent-gold: #D4AF37;    /* Soft Gold */
+  --accent-soft: rgba(181, 126, 220, 0.18);
+  --success: #5FBF8F;        /* Soft Mint */
+  --danger: #E5707B;
 
   /* Surfaces & text (light defaults) */
-  --bg: #eef2f7;
-  --surface: rgba(255, 255, 255, 0.72);
+  --bg: #efe7f6;
+  --surface: rgba(255, 255, 255, 0.70);
   --surface-solid: #ffffff;
-  --surface-border: rgba(30, 58, 95, 0.10);
-  --text: #14253a;
-  --text-muted: #5b6b7e;
-  --shadow: 0 10px 30px rgba(30, 58, 95, 0.12);
-  --shadow-hover: 0 18px 48px rgba(30, 58, 95, 0.22);
+  --surface-border: rgba(74, 58, 107, 0.12);
+  --text: #2A2140;
+  --text-muted: #6B5E85;
+  --shadow: 0 10px 30px rgba(74, 58, 107, 0.14);
+  --shadow-hover: 0 18px 48px rgba(74, 58, 107, 0.26);
 
   /* Typography */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -90,9 +92,10 @@ img { display: block; max-width: 100%; }
   z-index: -2;
   background:
     radial-gradient(60% 60% at 15% 10%, var(--accent-soft) 0%, transparent 55%),
-    radial-gradient(55% 55% at 85% 15%, rgba(30, 58, 95, 0.18) 0%, transparent 60%),
-    radial-gradient(70% 70% at 50% 100%, rgba(34, 197, 94, 0.08) 0%, transparent 60%),
-    linear-gradient(135deg, #eaf0f8 0%, #f5f7fa 45%, #e6edf6 100%);
+    radial-gradient(55% 55% at 85% 12%, rgba(232, 160, 191, 0.20) 0%, transparent 60%),
+    radial-gradient(65% 65% at 80% 90%, rgba(212, 175, 55, 0.12) 0%, transparent 60%),
+    radial-gradient(70% 70% at 50% 100%, rgba(95, 191, 143, 0.10) 0%, transparent 60%),
+    linear-gradient(135deg, #f3ecf9 0%, #f8f1fb 45%, #efe6f6 100%);
   background-size: 200% 200%;
   animation: gradientShift 18s ease infinite;
 }
@@ -108,8 +111,8 @@ img { display: block; max-width: 100%; }
   inset: 0;
   z-index: -1;
   background-image:
-    linear-gradient(rgba(30, 58, 95, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(30, 58, 95, 0.05) 1px, transparent 1px);
+    linear-gradient(rgba(74, 58, 107, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(74, 58, 107, 0.05) 1px, transparent 1px);
   background-size: 48px 48px;
   mask-image: radial-gradient(circle at 50% 30%, #000 0%, transparent 75%);
   -webkit-mask-image: radial-gradient(circle at 50% 30%, #000 0%, transparent 75%);
@@ -219,12 +222,13 @@ img { display: block; max-width: 100%; }
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--accent);
-  background: var(--accent-soft);
-  border: 1px solid rgba(212, 175, 55, 0.4);
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+  border: 1px solid rgba(181, 126, 220, 0.5);
   padding: 4px 10px;
   border-radius: 999px;
   white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(181, 126, 220, 0.35);
 }
 
 .topnav__right { display: flex; align-items: center; }
@@ -283,7 +287,7 @@ img { display: block; max-width: 100%; }
   font-size: clamp(2rem, 5vw, 3.4rem);
   font-weight: 800;
   letter-spacing: -0.03em;
-  background: linear-gradient(120deg, var(--primary) 0%, var(--primary-700) 60%, var(--accent) 130%);
+  background: linear-gradient(120deg, var(--primary) 0%, var(--accent) 55%, var(--accent-2) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -294,7 +298,7 @@ img { display: block; max-width: 100%; }
   font-size: clamp(1rem, 2.4vw, 1.3rem);
   font-weight: 600;
   color: var(--accent);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
 }
 
 .hero__desc {
@@ -319,16 +323,16 @@ img { display: block; max-width: 100%; }
   font-weight: 700;
   letter-spacing: 0.01em;
   color: #fff;
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-700) 100%);
+  background: linear-gradient(135deg, var(--accent) 0%, var(--primary) 60%, var(--accent-2) 120%);
   border-radius: 999px;
-  box-shadow: 0 12px 30px rgba(30, 58, 95, 0.35);
+  box-shadow: 0 12px 30px rgba(181, 126, 220, 0.40);
   transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
   cursor: pointer;
 }
 
 .btn-primary:hover {
   transform: translateY(-3px) scale(1.02);
-  box-shadow: 0 18px 44px rgba(30, 58, 95, 0.45);
+  box-shadow: 0 18px 44px rgba(181, 126, 220, 0.55);
 }
 
 .btn-primary:active { transform: translateY(-1px) scale(0.99); }

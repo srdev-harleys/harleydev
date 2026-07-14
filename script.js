@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Harleys Fine Baking ERP — Landing Page Script (Vanilla JS, ES6 modules)
+   Harleys Fine Baking ODOO DEV — Landing Page Script (Vanilla JS, ES6 modules)
    --------------------------------------------------------------------------
    Modules:
    1. Icon Library   — inline SVG icon set (no external libs)
@@ -16,7 +16,7 @@
    1. ICON LIBRARY
    ========================================================================== */
 const Icons = {
-  // App / generic ERP launch
+  // App / generic ODOO DEV launch
   erp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
   // Flask / test
   flask: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4A2 2 0 0 0 19 18l-5-9V3"/><path d="M7.5 14h9"/></svg>',
@@ -28,7 +28,7 @@ const Icons = {
   external: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/></svg>'
 };
 
-/* Resolve an icon key to markup, falling back to the ERP grid icon. */
+/* Resolve an icon key to markup, falling back to the ODOO DEV grid icon. */
 function getIcon(key) {
   return Icons[key] || Icons.erp;
 }
@@ -193,7 +193,7 @@ async function init() {
     renderApplications(document.getElementById('apps-grid'), config.applications);
     renderInfoCards(document.getElementById('info-grid'), config.infoCards);
   } catch (err) {
-    console.error('[Harleys ERP] Config error:', err);
+    console.error('[Harleys ODOO DEV] Config error:', err);
     const grid = document.getElementById('apps-grid');
     if (grid) grid.innerHTML =
       '<p class="section-subtitle">Unable to load applications. Please check config.json.</p>';

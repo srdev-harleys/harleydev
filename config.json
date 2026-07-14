@@ -1,25 +1,26 @@
 {
   "brand": {
-    "name": "Harleys Fine Baking ERP",
+    "name": "Harleys Fine Baking ODOO DEV",
     "subtitle": "Internal Testing Environment",
-    "description": "This portal provides secure access to the Harleys Fine Baking ERP testing environment. Only authorized users should access this system.",
+    "description": "This portal provides secure access to the Harleys Fine Baking ODOO DEV testing environment. Only authorized users should access this system.",
     "launchUrl": "https://8fvgvhc8-8069.inc1.devtunnels.ms/",
-    "launchLabel": "Launch ERP",
+    "launchLabel": "Launch ODOO DEV",
     "environment": "Testing",
     "footer": {
       "company": "Harleys Fine Baking",
-      "platform": "ERP Platform",
+      "platform": "ODOO DEV Platform",
       "poweredBy": "Powered by Odoo 19 Enterprise",
       "notice": "Designed for Internal Use Only"
     }
   },
   "applications": [
     {
-      "name": "Harleys ERP Testing",
+      "name": "Harleys ODOO DEV Testing",
       "url": "https://8fvgvhc8-8069.inc1.devtunnels.ms/",
       "icon": "erp",
       "status": "Online",
-      "environment": "Testing"
+      "environment": "Testing",
+      "featured": true
     }
   ],
   "infoCards": [
@@ -35,7 +36,7 @@
     },
     {
       "title": "Support",
-      "description": "Contact the ERP development team if you experience issues accessing the application.",
+      "description": "Contact the ODOO DEV development team if you experience issues accessing the application.",
       "icon": "support"
     }
   ]

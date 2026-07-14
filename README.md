@@ -1,6 +1,6 @@
-# Harleys Fine Baking ERP — Landing Page
+# Harleys Fine Baking ODOO DEV — Landing Page
 
-A premium, enterprise-grade internal portal launcher for the **Harleys Fine Baking ERP**
+A premium, enterprise-grade internal portal launcher for the **Harleys Fine Baking ODOO DEV**
 testing environment. Built with vanilla HTML5, CSS3, and JavaScript — no frameworks, no
 external JavaScript libraries.
 
@@ -48,7 +48,7 @@ You only need to edit **`config.json`** — no HTML changes required.
 {
   "applications": [
     {
-      "name": "Harleys ERP Testing",
+      "name": "Harleys ODOO DEV Testing",
       "url": "https://8fvgvhc8-8069.inc1.devtunnels.ms/",
       "icon": "erp",
       "status": "Online",
