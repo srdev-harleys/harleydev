@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shared Login &amp; Employee Attribution — Implementation Reference</title>
+<link rel="stylesheet" href="assets/docs.css">
+</head>
+<body>
+<div class="page">
+
+  <a class="back-link" href="index.html">&larr; Back to documentation home</a>
+
+  <header class="doc-head">
+    <p class="eyebrow">Implementation Reference — Harleys Odoo 19 Enterprise</p>
+    <h1>Shared Login &amp; Employee Attribution</h1>
+    <p class="dek">How a small pool of shared functional accounts, used by a much larger employee base, can still tell you exactly which person performed a given action — a login-time identity check, automatic per-message attribution, and opt-in deeper logging (including deletions) for individual models.</p>
+    <div class="meta">
+      <span><b>Module</b> hr_shared_login_binding</span>
+      <span><b>Status</b> Working, verified end-to-end (see §8)</span>
+      <span><b>Scope</b> res.users / hr.employee / mail.thread / ir.model</span>
+    </div>
+  </header>
+
+  <nav class="toc">
+    <b>Contents</b>
+    <ol>
+      <li><a href="#problem">The problem</a></li>
+      <li><a href="#architecture">Architecture: two independent pieces</a></li>
+      <li><a href="#login-flow">Part 1 — Login-time identity verification</a></li>
+      <li><a href="#attribution-flow">Part 2 — Message-level attribution (two layers)</a></li>
+      <li><a href="#admin-config">Admin configuration: enabling deeper attribution for a model</a></li>
+      <li><a href="#deletion-log">The parentless-deletion log — hr.attribution.log</a></li>
+      <li><a href="#consolidation">Consolidation: one note per batch, not one per record</a></li>
+      <li><a href="#walkthrough">Walkthrough (as tested)</a></li>
+      <li><a href="#admin-guide">Admin guide: marking an account as shared</a></li>
+      <li><a href="#files">Module reference</a></li>
+      <li><a href="#decisions">Design decisions and alternatives ruled out</a></li>
+      <li><a href="#limitations">Known limitations / open items</a></li>
+      <li><a href="#schema">Full schema reference</a></li>
+    </ol>
+  </nav>
+
+  <section id="problem">
+    <h2>1. The problem</h2>
+    <p>A limited number of <code>res.users</code> accounts, a much larger number of <code>hr.employee</code> records. Many roles are shared responsibilities worked from a common login — e.g. two employees both use the <b>Supply Chain Planner</b> account depending on shift. When a Purchase Order, Indent Request, or any other business record is created or changed, <code>create_uid</code>/<code>write_uid</code> only ever points at the shared account — never at the person who was actually at the keyboard.</p>
+    <p>The goal: know which employee performed a given action, without provisioning an individually licensed Odoo user for every employee.</p>
+  </section>
+
+  <section id="architecture">
+    <h2>2. Architecture: two independent pieces</h2>
+    <p>The solution has two parts that work together but are independently useful:</p>
+    <table>
+      <thead><tr><th>Part</th><th>Answers</th><th>Where it lives</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><b>Login-time verification</b></td>
+          <td>"Which employee is behind this session, right now?"</td>
+          <td><code>models/res_users.py</code>, <code>controllers/main.py</code></td>
+        </tr>
+        <tr>
+          <td><b>Message-level attribution</b></td>
+          <td>"Tag every chatter message this session posts, on every model, with that employee — and optionally log the changes and deletions that don't naturally produce a message at all."</td>
+          <td><code>models/message_attribution.py</code>, <code>models/attribution_config.py</code>, <code>models/attribution_log.py</code></td>
+        </tr>
+      </tbody>
+    </table>
+    <p>Neither part requires per-employee Odoo user licenses. Only the functional accounts are licensed <code>res.users</code>; employees prove their identity with their own existing personal login (the same one used for HR self-service today).</p>
+  </section>
+
+  <section id="login-flow">
+    <h2>3. Part 1 — Login-time identity verification</h2>
+    <p>Rather than building a custom session gate, this reuses the exact mechanism Odoo's own two-factor authentication (<code>auth_totp</code>) is built on:</p>
+    <ul>
+      <li><code>res.users._mfa_type()</code> / <code>_mfa_url()</code> — hooks core already calls to ask "does this account need a second verification step, and if so, where do I send the user?"</li>
+      <li>The session's <code>pre_uid</code> → <code>finalize()</code> flow (<code>odoo/http.py</code>) — when <code>_mfa_url()</code> returns a URL, the session is left in a pending state (<code>pre_uid</code> set, <code>uid</code> unset) until that second step calls <code>finalize()</code>. Every route that checks <code>session.uid</code> — nearly all of them — automatically treats a pending session as "not logged in," so no separate bypass-guard was needed.</li>
+    </ul>
+    <h3>What happens on login</h3>
+    <ol>
+      <li>A user signs in with a functional account's own credentials (e.g. <code>planner@harleys.com</code>) at the normal Odoo login screen — no change to that screen.</li>
+      <li>If that account is flagged <code>is_shared_login</code>, Odoo's own MFA redirect mechanism sends the browser to a second page: <b>Confirm your identity</b>.</li>
+      <li>The employee enters <i>their own</i> existing personal login (the same credential they already use for HR self-service / <code>employee_portal</code>) — not a new password.</li>
+      <li>That credential is checked via the same <code>res.users.authenticate()</code> core uses for the primary login (so brute-force cooldown applies here too), but it never becomes the session's <code>uid</code> — it's a proof of identity, not a second login. If the account has an <code>authorized_employee_ids</code> allow-list configured, the employee must also be on it.</li>
+      <li>On success, the <i>original</i> functional account's session is finalized, and the employee's id is stored in the session (<code>employee_binding_id</code>) for the rest of that browser session.</li>
+    </ol>
+    <p>An individual (non-shared) login skips step 2 entirely — zero UX change for anyone using their own personal account.</p>
+  </section>
+
+  <section id="attribution-flow">
+    <h2>4. Part 2 — Message-level attribution (two layers)</h2>
+    <p>Every chatter-enabled model (anything using <code>mail.thread</code> or a variant) is extended once, in <code>models/message_attribution.py</code>, via <code>_inherit = 'mail.thread'</code>. Because Odoo composes that mixin into every model that uses it, this applies automatically to every current <i>and future</i> model — no per-model registration file, no manifest dependency on the owning module.</p>
+
+    <h3>Layer 1 — always on</h3>
+    <p>Overrides <code>_message_create()</code> — the single point every message-posting path converges on before a <code>mail.message</code> row is actually written, whether it came from:</p>
+    <ul>
+      <li>A manual "Log note" or Discuss message (<code>message_post()</code>),</li>
+      <li>Odoo's own automatic field-change tracking (<code>_message_log()</code> — this matters: a plain tracked-field change with no custom subtype configured, like a status change on an Indent, does <i>not</i> go through <code>message_post()</code> at all — an earlier version of this module missed these until the hook was moved to <code>_message_create</code>),</li>
+      <li>Or any explicit business-logic call to post a message.</li>
+    </ul>
+    <p>Adds <code>employee_id</code> to the message (structured and queryable, not just text) and appends an inline <i>"— Logged by &lt;employee&gt;"</i> note. Free, automatic, no configuration.</p>
+    <div class="callout">
+      <b>Safety properties</b>
+      Wrapped in try/except — attribution can never break the underlying business action (confirming a PO, saving a record) it's attached to, only fail silently with a logged warning. No recursion risk (<code>mail.message</code> doesn't itself inherit <code>mail.thread</code>). No new noise — it only enriches messages that were already going to be posted; it never manufactures new ones.
+    </div>
+
+    <h3>Layer 2 — opt-in per model</h3>
+    <p>Layer 1 only covers what already gets posted as a chatter message. Two real gaps remain structurally out of its reach:</p>
+    <ul>
+      <li><b>Fields with no <code>tracking=True</code> configured</b> — a plain field change nobody asked Odoo to log in the first place.</li>
+      <li><b>Line items</b> — child records such as Indent Request Lines, whose own chatter panel isn't shown anywhere in the UI.</li>
+    </ul>
+    <p>Layer 2 closes both, but only where an admin opts a specific model in. It overrides <code>create()</code>/<code>write()</code>/<code>unlink()</code> on the same class, gated by three new fields on <code>ir.model</code> (see §5). Where a record has a parent document, the note is posted on the <i>parent's</i> chatter instead of the child's invisible one — see §5 for exactly how the parent is identified, and §7 for how batches of records are consolidated into a single note instead of one per row.</p>
+  </section>
+
+  <section id="admin-config">
+    <h2>5. Admin configuration: enabling deeper attribution for a model</h2>
+    <p>Layer 2 reuses <b>Settings → Technical → Models</b> (<code>ir.model</code>) rather than a new screen — already searchable by name/module, already technical-user-only. A new <b>Employee Attribution</b> tab (restricted to <code>base.group_system</code>) adds:</p>
+    <table>
+      <thead><tr><th>Field</th><th>Type</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td><code>employee_attribution_log_changes</code></td><td>Boolean</td><td>Post an explicit "Created/Updated" note on every create/write for this model, regardless of field tracking. Off by default.</td></tr>
+        <tr><td><code>employee_attribution_log_deletions</code></td><td>Boolean</td><td>Post a "Deleted" note when a record is removed. Off by default.</td></tr>
+        <tr><td><code>employee_attribution_parent_field_id</code></td><td>Many2one → <code>ir.model.fields</code></td><td>The Many2one field on <i>this</i> model pointing to its parent document (e.g. "Indent Request" on Indent Request Line). A dropdown domain-filtered to Many2one fields belonging to the model being configured — not a technical name typed by hand.</td></tr>
+      </tbody>
+    </table>
+    <p>A constraint (<code>_check_employee_attribution_config</code>) blocks enabling either boolean on:</p>
+    <ul>
+      <li>Technical/infrastructure models (<code>mail.*</code>, <code>bus.*</code>, <code>ir.*</code>, <code>base_automation</code>, <code>iap.*</code>, <code>studio.*</code>, <code>res.users</code>) — hard-excluded regardless of admin intent, to avoid recursion/noise in the mail/system internals.</li>
+      <li>Any model without a chatter to log to (a <code>message_post</code> capability check).</li>
+      <li>A <code>parent_field_id</code> that doesn't actually belong to the model, or isn't a Many2one.</li>
+    </ul>
+    <div class="callout">
+      <b>What "empty parent field" means — this differs by action</b>
+      Create/Update with no parent field → note posts on the record's <i>own</i> chatter. Correct default for top-level documents.<br>
+      Delete with no parent field → does <i>not</i> post on the record (it would be wiped by <code>mail.thread.unlink()</code>'s own message cleanup moments later) — falls back to the standalone log table instead (§6).
+    </div>
+
+    <h3>Auto-detecting the parent field</h3>
+    <p><code>_auto_detect_attribution_parent_field()</code> uses a heuristic: the Many2one field with <code>ondelete='cascade'</code> is the standard Odoo convention for a line item's relation to its owning document (<code>sale.order.line.order_id</code>, <code>account.move.line.move_id</code>, <code>stock.move.line.picking_id</code>, this repo's own <code>indent.request.line.request_id</code> all use it). It returns that field when there's exactly one candidate, and returns nothing — left for manual review — when there are zero or multiple candidates. Genuinely top-level documents correctly yield nothing, since they don't have one.</p>
+
+    <h3>Bulk "Enable Employee Attribution"</h3>
+    <p><code>action_enable_employee_attribution()</code> is a bulk operation, exposed as a contextual action in the Models list view: select any rows — including all of them — and run it. For each selected row, it skips (and logs) anything technical/incompatible; otherwise it turns both booleans on and auto-fills the parent field if one isn't already set and the heuristic finds exactly one candidate. This was run once already across the instance's model list.</p>
+
+    <h3><span class="step-num">1</span>Open Settings</h3>
+    <figure class="shot">
+      <img src="screenshots/employee_attribution_docs/select-setting.png" alt="Screenshot: Apps home screen, about to open the Settings app">
+      <div class="placeholder">Screenshot: Apps home screen, about to open the Settings app</div>
+      <figcaption><b>select-setting.png</b></figcaption>
+    </figure>
+
+    <h3><span class="step-num">2</span>Switch to the Technical tab</h3>
+    <figure class="shot">
+      <img src="screenshots/employee_attribution_docs/go_to_technical_tab.png" alt="Screenshot: Settings, Technical tab open, showing the Discuss / Activities / Email menu groups">
+      <div class="placeholder">Screenshot: Settings, Technical tab open</div>
+      <figcaption><b>go_to_technical_tab.png</b> — note the new <b>Employee Attribution Log</b> entry already in the top menu bar (§6).</figcaption>
+    </figure>
+
+    <h3><span class="step-num">3</span>Open Models under Database Structure</h3>
+    <figure class="shot">
+      <img src="screenshots/employee_attribution_docs/select_models.png" alt="Screenshot: Technical menu scrolled to Database Structure, Models highlighted">
+      <div class="placeholder">Screenshot: Technical menu scrolled to Database Structure, Models highlighted</div>
+      <figcaption><b>select_models.png</b></figcaption>
+    </figure>
+
+    <h3><span class="step-num">4</span>Bulk-enable across every model, or just the ones you pick</h3>
+    <figure class="shot">
+      <img src="screenshots/employee_attribution_docs/selectall_models_and_enable_employee_attribution.png" alt="Screenshot: Models list, every row selected, Actions menu open with Enable Employee Attribution highlighted">
+      <div class="placeholder">Screenshot: Models list, every row selected, Actions menu open with Enable Employee Attribution highlighted</div>
+      <figcaption><b>selectall_models_and_enable_employee_attribution.png</b> — select the rows to configure (here, every model in the registry) → <b>Actions → Enable Employee Attribution</b>. Incompatible rows are skipped automatically.</figcaption>
+    </figure>
+
+    <h3><span class="step-num">5</span>Fine-tune a single model by hand</h3>
+    <figure class="shot">
+      <img src="screenshots/employee_attribution_docs/individual_model_employeeattribution.png" alt="Screenshot: Indent Request model record, Employee Attribution tab, Log Every Change and Log Deletions checked, Attribution Parent Field empty">
+      <div class="placeholder">Screenshot: Indent Request model record, Employee Attribution tab</div>
+      <figcaption><b>individual_model_employeeattribution.png</b> — the same three fields from the table above, on a single model's record. Indent Request is a top-level document, so its parent field is correctly left blank.</figcaption>
+    </figure>
+  </section>
+
+  <section id="deletion-log">
+    <h2>6. The parentless-deletion log — <code>hr.attribution.log</code></h2>
+    <p>The one thing chatter genuinely cannot do: log a deletion for a record with <b>no</b> parent to redirect to (a top-level document, or a specific record whose parent field happens to be unset). Deliberately narrow in scope — this is not a general duplicate log, it exists only for that one gap. It is not <code>mail.thread</code>-based (it <i>is</i> the log; logging to it would be circular).</p>
+    <table>
+      <thead><tr><th>Column</th><th>Type</th></tr></thead>
+      <tbody>
+        <tr><td><code>employee_id</code></td><td>FK → <code>hr.employee</code></td></tr>
+        <tr><td><code>user_id</code></td><td>FK → <code>res.users</code></td></tr>
+        <tr><td><code>company_id</code></td><td>FK → <code>res.company</code></td></tr>
+        <tr><td><code>res_model</code></td><td>Char</td></tr>
+        <tr><td><code>res_id</code></td><td>Integer</td></tr>
+        <tr><td><code>record_name</code></td><td>Char</td></tr>
+        <tr><td><code>action</code></td><td>Selection (currently only <code>'deleted'</code>)</td></tr>
+        <tr><td><code>logged_at</code></td><td>Datetime</td></tr>
+      </tbody>
+    </table>
+    <p><code>_log_access = False</code> — no <code>create_uid</code>/<code>write_uid</code>/<code>create_date</code>/<code>write_date</code>, since <code>user_id</code> + <code>logged_at</code> already cover that, deliberately.</p>
+    <p>Read-only in the UI (<code>perm_write</code>/<code>perm_create</code>/<code>perm_unlink</code> all <code>0</code>) for <code>base.group_system</code> and <code>hr.group_hr_manager</code>; only ever written via <code>sudo()</code> from the deletion fallback path in code. Browsable at <b>Settings → Administration → Employee Attribution Log</b>.</p>
+  </section>
+
+  <section id="consolidation">
+    <h2>7. Consolidation: one note per batch, not one per record</h2>
+    <p><code>_log_attribution_change()</code> and <code>_log_attribution_deletion()</code> group records by parent rather than looping and posting per record. Verified against this repo's actual code — both noisy cases reported during testing are each a single batched ORM call, so both are already fully consolidated by this grouping (one summary note like "Created: 40 line(s)." per parent per call, or the specific description when only one record is involved):</p>
+    <ul>
+      <li>A template loading many <code>indent.request.line</code> records via <code>(0,0,vals)</code> One2many commands.</li>
+      <li><code>indent_request.py</code>'s <code>request.line_ids.write({'state': 'sent'})</code> status change.</li>
+    </ul>
+    <div class="callout warn">
+      <b>Boundary worth knowing</b>
+      Consolidation only works within a single ORM call. Code that creates/updates line items one at a time in a Python loop (none currently does, for the cases above) would still produce one message per iteration, since each is a separate call from the ORM's point of view.
+    </div>
+  </section>
+
+  <section id="walkthrough">
+    <h2>8. Walkthrough (as tested)</h2>
+    <p>This is the exact sequence used to verify the login-time verification and Layer 1 attribution, using the <b>Supply Chain Planner</b> shared account and two real employees.</p>
+
+    <h3><span class="step-num">1</span>Confirm the account before setup</h3>
+    <figure class="shot">
+      <img src="screenshots/employee_attribution_docs/apps-launcher.png" alt="Screenshot: Odoo Apps launcher, full application grid">
+      <div class="placeholder">Screenshot: Odoo Apps launcher, full application grid</div>
+      <figcaption><b>apps-launcher.png</b> — the standard Odoo home screen, for reference / orientation.</figcaption>
+    </figure>
+
+    <h3><span class="step-num">2</span>Locate the account in Settings</h3>
+    <figure class="shot">
+      <img src="screenshots/employee_attribution_docs/settings-general.png" alt="Screenshot: Settings → General Settings, active user count">
+      <div class="placeholder">Screenshot: Settings → General Settings, active user count</div>
+      <figcaption><b>settings-general.png</b> — confirms the licensed-user baseline this feature works within.</figcaption>
+    </figure>
+    <figure class="shot">
+      <img src="screenshots/employee_attribution_docs/settings-users-menu.png" alt="Screenshot: Settings → Users &amp;amp; Companies menu">
+      <div class="placeholder">Screenshot: Settings → Users &amp; Companies menu</div>
+      <figcaption><b>settings-users-menu.png</b></figcaption>
+    </figure>
+    <figure class="shot">
+      <img src="screenshots/employee_attribution_docs/users-list-planner.png" alt="Screenshot: Users list filtered to &quot;planner&quot; — Supply Chain Planner / planner@harleys.com">
+      <div class="placeholder">Screenshot: Users list filtered to "planner" — Supply Chain Planner / planner@harleys.com</div>
+      <figcaption><b>users-list-planner.png</b></figcaption>
+    </figure>
+
+    <h3><span class="step-num">3</span>Mark the account as shared and authorize employees</h3>
+    <figure class="shot">
+      <img src="screenshots/employee_attribution_docs/shared-login-tab-off.png" alt="Screenshot: User form, new &quot;Shared Login&quot; tab, unchecked">
+      <div class="placeholder">Screenshot: User form, new "Shared Login" tab, unchecked</div>
+      <figcaption><b>shared-login-tab-off.png</b></figcaption>
+    </figure>
+    <figure class="shot">
+      <img src="screenshots/employee_attribution_docs/shared-login-tab-on.png" alt="Screenshot: &quot;Shared / Functional Login&quot; checked; Authorized Employees field visible">
+      <div class="placeholder">Screenshot: "Shared / Functional Login" checked; Authorized Employees field visible</div>
+      <figcaption><b>shared-login-tab-on.png</b></figcaption>
+    </figure>
+    <figure class="shot">
+      <img src="screenshots/employee_attribution_docs/authorized-employees-search-1.png" alt="Screenshot: Authorized Employees search — typing &quot;vinee&quot; → Komatireddy Vineeth Reddy">
+      <div class="placeholder">Screenshot: Authorized Employees search — typing "vinee" → Komatireddy Vineeth Reddy</div>
+      <figcaption><b>authorized-employees-search-1.png</b></figcaption>
+    </figure>
+    <figure class="shot">
+      <img src="screenshots/employee_attribution_docs/authorized-employees-search-2.png" alt="Screenshot: Authorized Employees search — typing &quot;bharg&quot; → Kalepu Anjani Bhargav Kumar, Merugu Sai Bhargav">
+      <div class="placeholder">Screenshot: Authorized Employees search — typing "bharg" → Kalepu Anjani Bhargav Kumar, Merugu Sai Bhargav</div>
+      <figcaption><b>authorized-employees-search-2.png</b></figcaption>
+    </figure>
+    <figure class="shot">
+      <img src="screenshots/employee_attribution_docs/authorized-employees-saved.png" alt="Screenshot: Both employees added and saved on the Shared Login tab">
+      <div class="placeholder">Screenshot: Both employees added and saved on the Shared Login tab</div>
+      <figcaption><b>authorized-employees-saved.png</b> — Komatireddy Vineeth Reddy and Kalepu Anjani Bhargav Kumar are now the only two employees permitted to bind their identity to this account.</figcaption>
+    </figure>
+
+    <h3><span class="step-num">4</span>First employee logs in through the shared account</h3>
+    <figure class="shot">
+      <img src="screenshots/employee_attribution_docs/login-planner.png" alt="Screenshot: standard Odoo login screen, planner@harleys.com credentials entered">
+      <div class="placeholder">Screenshot: standard Odoo login screen, planner@harleys.com credentials entered</div>
+      <figcaption><b>login-planner.png</b></figcaption>
+    </figure>
+    <figure class="shot">
+      <img src="screenshots/employee_attribution_docs/confirm-identity-employee-1.png" alt="Screenshot: &quot;Confirm your identity&quot; page — Employee Login: kvineethreddy.cv@gmail.com">
+      <div class="placeholder">Screenshot: "Confirm your identity" page — Employee Login: kvineethreddy.cv@gmail.com</div>
+      <figcaption><b>confirm-identity-employee-1.png</b> — the custom second step, only shown because this account is flagged shared.</figcaption>
+    </figure>
+
+    <h3><span class="step-num">5</span>Create an Indent Request and check the chatter</h3>
+    <figure class="shot">
+      <img src="screenshots/employee_attribution_docs/indent-created-tagged.png" alt="Screenshot: Indent Request IND08781 (Draft) — chatter shows &quot;Indent Request created&quot; tagged &quot;Logged by KOMATIREDDY VINEETH REDDY&quot;">
+      <div class="placeholder">Screenshot: Indent Request IND08781 (Draft) — chatter shows "Indent Request created" tagged "Logged by KOMATIREDDY VINEETH REDDY"</div>
+      <figcaption><b>indent-created-tagged.png</b> — first proof point: the creation message, which goes through Odoo's no-subtype tracking path, carries the correct employee.</figcaption>
+    </figure>
+
+    <h3><span class="step-num">6</span>Log out, second employee logs in through the same shared account</h3>
+    <figure class="shot">
+      <img src="screenshots/employee_attribution_docs/confirm-identity-employee-2.png" alt="Screenshot: &quot;Confirm your identity&quot; page — Employee Login: anjanibhargav23@gmail.com">
+      <div class="placeholder">Screenshot: "Confirm your identity" page — Employee Login: anjanibhargav23@gmail.com</div>
+      <figcaption><b>confirm-identity-employee-2.png</b></figcaption>
+    </figure>
+
+    <h3><span class="step-num">7</span>Change the record's status and check the chatter again</h3>
+    <figure class="shot">
+      <img src="screenshots/employee_attribution_docs/indent-status-change-tagged.png" alt="Screenshot: same Indent Request, now Sent — chatter shows &quot;Draft → Sent (Status)&quot; tagged &quot;Logged by KALEPU ANJANI BHARGAV KUMAR&quot;, with the original creation message still correctly attributed to the first employee">
+      <div class="placeholder">Screenshot: same Indent Request, now Sent — chatter shows "Draft → Sent (Status)" tagged "Logged by KALEPU ANJANI BHARGAV KUMAR", with the original creation message still correctly attributed to the first employee</div>
+      <figcaption><b>indent-status-change-tagged.png</b> — the decisive proof: <i>two different employees</i>, sharing <i>one login</i>, get correctly and separately attributed for two different actions on the same record.</figcaption>
+    </figure>
+  </section>
+
+  <section id="admin-guide">
+    <h2>9. Admin guide: marking an account as shared</h2>
+    <ol>
+      <li>Settings → Users &amp; Companies → Users, open the account.</li>
+      <li>Open the <b>Shared Login</b> tab.</li>
+      <li>Check <b>Shared / Functional Login</b>.</li>
+      <li>Optionally add specific employees to <b>Authorized Employees</b>. Leave empty to allow any employee with a valid personal login to bind to this account; populate it to restrict which employees may use it.</li>
+      <li>Save.</li>
+    </ol>
+    <p>No restart or module update is needed for this step — it's a plain data change. The <b>Shared Login</b> tab itself is only visible to users with Settings/Administration access (<code>base.group_system</code>).</p>
+  </section>
+
+  <section id="files">
+    <h2>10. Module reference — <code>hr_shared_login_binding</code></h2>
+    <table>
+      <thead><tr><th>File</th><th>Responsibility</th></tr></thead>
+      <tbody>
+        <tr><td><code>__manifest__.py</code></td><td>Module metadata and dependencies.</td></tr>
+        <tr><td><code>models/res_users.py</code></td><td><code>is_shared_login</code>, <code>authorized_employee_ids</code> fields; <code>_mfa_type()</code>/<code>_mfa_url()</code> overrides that trigger the employee-verify step, chaining through <code>super()</code> so an account with real 2FA configured keeps using that instead.</td></tr>
+        <tr><td><code>controllers/main.py</code></td><td>The <code>/web/login/employee_verify</code> route: renders the second-step form, validates the submitted employee credential, checks <code>authorized_employee_ids</code> if set, finalizes the functional account's session and binds the employee id to it.</td></tr>
+        <tr><td><code>views/employee_verify_templates.xml</code></td><td>The "Confirm your identity" page template, built on the same layout as the standard login and 2FA pages.</td></tr>
+        <tr><td><code>views/res_users_views.xml</code></td><td>Adds the Shared Login tab to the user form (admin-only).</td></tr>
+        <tr><td><code>models/message_attribution.py</code></td><td>Both attribution layers on the same <code>mail.thread</code>-extended class: the <b>Layer 1</b> <code>_message_create()</code> override (<code>employee_id</code> field + "Logged by" note), and the <b>Layer 2</b> <code>create()</code>/<code>write()</code>/<code>unlink()</code> overrides plus the consolidation helpers (§7), gated by the <code>ir.model</code> config below.</td></tr>
+        <tr><td><code>models/attribution_config.py</code></td><td>The <code>ir.model</code> extension: the three Employee Attribution fields (§5), the compatibility constraint, the parent-field auto-detect heuristic, and the bulk "Enable Employee Attribution" action.</td></tr>
+        <tr><td><code>models/attribution_log.py</code></td><td><code>hr.attribution.log</code> (§6) — the fallback log for parentless deletions.</td></tr>
+        <tr><td><code>views/ir_model_views.xml</code></td><td>The Employee Attribution tab on the model record, and the bulk action entry in the Models list view.</td></tr>
+        <tr><td><code>views/attribution_log_views.xml</code></td><td>Read-only list/form views for <code>hr.attribution.log</code> and its Settings → Administration menu item.</td></tr>
+        <tr><td><code>models/employee_attribution_mixin.py</code>, <code>models/attribution_targets.py</code></td><td>An earlier, per-model create/write implementation. Disabled (not imported) but kept on disk as a fallback/reference — see §11.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="decisions">
+    <h2>11. Design decisions and alternatives ruled out</h2>
+    <p>Several approaches were evaluated before arriving at the current design:</p>
+    <ul>
+      <li><b>PIN/badge gate modeled on <code>mrp_workorder</code>'s Shop Floor login</b> — rejected as the primary mechanism because it only covers interactive UI sessions, not API/automation-triggered writes, and adds friction to every single action rather than once per session.</li>
+      <li><b>Resolving identity from <code>hr_attendance</code> clock-in/out data</b> — rejected as unreliable: stale "still checked in" state and simultaneous multi-employee attendance would create ambiguous attribution. Login-time verification is deterministic instead.</li>
+      <li><b>A brand-new password field on <code>hr.employee</code></b> — rejected in favor of reusing each employee's existing personal login (already provisioned via <code>employee_portal</code>), avoiding a second credential store and, importantly, avoiding any new licensed <code>res.users</code> seats.</li>
+      <li><b>Per-model <code>create</code>/<code>write</code> overrides, explicitly listed</b> (<code>attribution_targets.py</code>) — the first working implementation; scaled to dozens of models across many module dependencies before being judged too heavy to maintain and test. <i>Layer 2 (§4, §5) later revisits create/write overrides, but as one generic, config-driven mechanism gated by <code>ir.model</code> fields — not one Python class per model.</i></li>
+      <li><b>A blanket, fully-automatic patch across every model in the registry</b> — considered and rejected: real recursion risk (a message-posting patch could trigger itself via <code>mail.message</code> creation if not scoped carefully), noise on high-frequency internal writes, and harder to debug than an explicit mechanism. Layer 2's opt-in-per-model design and the technical/infrastructure exclusion list (§5) are the direct answer to this concern.</li>
+      <li><b>The current approach — one hook on <code>mail.thread._message_create()</code>, plus opt-in <code>create</code>/<code>write</code>/<code>unlink</code> overrides on the same class</b> — adopted because Layer 1 only enriches messages that were already going to be posted (no new noise, no recursion risk, since <code>mail.message</code> doesn't inherit <code>mail.thread</code>) and applies automatically everywhere, while Layer 2 closes the remaining gaps (untracked fields, line items, deletions) only where an admin explicitly opts a model in.</li>
+    </ul>
+  </section>
+
+  <section id="limitations">
+    <h2>12. Known limitations / open items</h2>
+    <ul>
+      <li><b>Enabling <code>employee_attribution_log_changes</code> on a model that already has <code>tracking=True</code> fields</b> (most real business documents) produces a second, redundant note alongside the native tracking message Layer 1 already tags. The bulk-enable action does not currently avoid this — it turns both flags on regardless of whether native tracking already covers a model. A more surgical default (only auto-enable on models with no tracked fields, or with a parent field) was discussed as an alternative but not built.</li>
+      <li><b>The auto-detect heuristic is a best guess, not a guarantee</b> — models with more than one <code>ondelete='cascade'</code> Many2one are left for manual review, and it cannot distinguish "genuine top-level document" from "child model that just doesn't use cascade delete."</li>
+      <li><b>No employee code (e.g. a short "007"-style reference) in the note yet</b> — <code>hr.employee.registration_number</code> ("Employee Reference") is the natural field for this, but it isn't populated for any employee yet. Once populated, one line of code adds it to the note.</li>
+      <li><b>An earlier, fully static per-model implementation</b> (<code>models/attribution_targets.py</code>, one <code>_inherit</code> class per model) exists in the codebase but is disabled (import commented out in <code>models/__init__.py</code>) — kept only as a fallback/reference, superseded by the two-layer <code>mail.thread</code> approach. Its dependency list (spanning many modules) is still declared in the manifest even though the file is disabled, so the fallback stays usable without a manifest change if ever re-enabled. Worth revisiting if the per-model approach is retired for good.</li>
+      <li><b><code>ir_model</code> may still carry one orphaned, unused text column</b> (<code>employee_attribution_parent_field</code>, the pre-dropdown version of the parent-field setting) if <code>-u</code> was run while that version was briefly active — harmless, not yet cleaned up.</li>
+      <li><b>Two-factor auth coexistence:</b> if an account is ever both <code>is_shared_login</code> and has TOTP enabled, only the TOTP prompt fires today (not both in sequence). Not a concern currently since <code>auth_totp</code> isn't in use in this instance.</li>
+      <li><b>Coverage is bounded to messages that already get posted, for any model that hasn't had Layer 2 enabled.</b> A model write that never triggers any message (no field tracking, no explicit log, Layer 2 off) has nothing to attribute — this is by design, not a gap, but worth knowing when auditing "why isn't this action showing an employee."</li>
+    </ul>
+  </section>
+
+  <section id="schema">
+    <h2>13. Full schema reference</h2>
+    <p>All tables touched by this module, for reference:</p>
+    <table>
+      <thead><tr><th>Table</th><th>Change</th></tr></thead>
+      <tbody>
+        <tr><td><code>res_users</code></td><td>+ <code>is_shared_login</code> (bool)</td></tr>
+        <tr><td><code>res_users_authorized_employee_rel</code></td><td>new — plain M2M junction for <code>authorized_employee_ids</code> (who may bind to a shared account), not a log</td></tr>
+        <tr><td><code>mail_message</code></td><td>+ <code>employee_id</code> (FK <code>hr_employee</code>) — <b>this is where every attribution note actually lives</b></td></tr>
+        <tr><td><code>ir_model</code></td><td>+ <code>employee_attribution_log_changes</code> (bool), + <code>employee_attribution_log_deletions</code> (bool), + <code>employee_attribution_parent_field_id</code> (FK <code>ir_model_fields</code>)</td></tr>
+        <tr><td><code>hr_attribution_log</code></td><td>new table (§6) — fallback for parentless deletions only</td></tr>
+      </tbody>
+    </table>
+    <p>There is still no dedicated "all logs" table — querying "everything employee X did, across every model and every account" is <code>SELECT * FROM mail_message WHERE employee_id = X</code>, the same table Odoo's own chatter has always used, plus <code>hr_attribution_log</code> specifically for the deletion-with-no-parent case.</p>
+  </section>
+
+  <footer>
+    Internal implementation reference — Harleys Odoo 19 Enterprise. Click any screenshot to view it enlarged and step through the rest. Looking for a non-technical walkthrough instead? See the <a href="user-guide.html">User Guide</a>.
+  </footer>
+
+</div>
+<script src="assets/docs.js"></script>
+</body>
+</html>

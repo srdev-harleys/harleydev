@@ -29,6 +29,14 @@
       "status": "Online",
       "environment": "Task Tracking",
       "featured": false
+    },
+    {
+      "name": "Documentation Hub",
+      "url": "docs/index.html",
+      "icon": "docs",
+      "status": "Online",
+      "environment": "User & Developer Guides",
+      "featured": false
     }
   ],
   "infoCards": [
@@ -46,6 +54,22 @@
       "title": "Support",
       "description": "Contact the ODOO DEV development team if you experience issues accessing the application.",
       "icon": "support"
+    }
+  ],
+  "recentUpdates": [
+    {
+      "date": "2026-07-23",
+      "title": "Employee Attribution guides expanded with per-model change & deletion logging",
+      "description": "The Employee Attribution documentation now covers opt-in deeper logging for individual models — including deletions — with a full admin configuration walkthrough for IT.",
+      "link": "docs/index.html",
+      "linkLabel": "Browse the docs"
+    },
+    {
+      "date": "2026-07-22",
+      "title": "Shared Login & Employee Attribution guides published",
+      "description": "Added a plain-language User Guide and a technical Developer Guide covering shared functional accounts and automatic message attribution, with a Documentation home to pick the right one.",
+      "link": "docs/index.html",
+      "linkLabel": "Browse the docs"
     }
   ]
 }

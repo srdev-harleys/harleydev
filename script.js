@@ -26,6 +26,8 @@ const Icons = {
   support: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13v-1a8 8 0 0 1 16 0v1"/><rect x="2.5" y="13" width="4" height="6" rx="1.5"/><rect x="17.5" y="13" width="4" height="6" rx="1.5"/><path d="M20 19v1a3 3 0 0 1-3 3h-4"/></svg>',
   // Kanban board / task tracking
   board: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="9.5" y="4" width="5" height="10" rx="1.5"/><rect x="16" y="4" width="5" height="13" rx="1.5"/></svg>',
+  // Documentation / guide book
+  docs: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/><path d="M9 7h7M9 11h7"/></svg>',
   // External link arrow
   external: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/></svg>'
 };
@@ -130,6 +132,42 @@ function renderInfoCards(container, infoCards = []) {
   });
 }
 
+/* Build the "Recent Updates" list from the "recentUpdates" array. */
+function renderUpdates(container, updates = []) {
+  if (!container) return;
+  container.innerHTML = '';
+
+  const fmtDate = new Intl.DateTimeFormat(undefined, {
+    year: 'numeric', month: 'short', day: 'numeric'
+  });
+
+  updates.forEach((update) => {
+    const el = document.createElement('article');
+    el.className = 'update-item';
+    el.setAttribute('role', 'listitem');
+
+    const parsed = update.date ? new Date(update.date) : null;
+    const dateLabel = parsed && !isNaN(parsed) ? fmtDate.format(parsed) : (update.date || '');
+
+    el.innerHTML = `
+      <time class="update-item__date" datetime="${escapeHtml(update.date || '')}">${escapeHtml(dateLabel)}</time>
+      <div class="update-item__body">
+        <h3 class="update-item__title">${escapeHtml(update.title || 'Update')}</h3>
+        <p class="update-item__desc">${escapeHtml(update.description || '')}</p>
+        ${update.link ? `
+        <a class="update-item__link" href="${escapeHtml(update.link)}">
+          ${escapeHtml(update.linkLabel || 'Read more')} ${getIcon('external')}
+        </a>` : ''}
+      </div>
+    `;
+    container.appendChild(el);
+  });
+
+  if (!updates.length) {
+    container.innerHTML = '<p class="section-subtitle">No recent updates.</p>';
+  }
+}
+
 /* Apply brand-level text from config to the hero / nav / footer. */
 function applyBrand(brand = {}) {
   setText('hero-title', brand.name);
@@ -196,6 +234,7 @@ async function init() {
     applyBrand(config.brand);
     renderApplications(document.getElementById('apps-grid'), config.applications);
     renderInfoCards(document.getElementById('info-grid'), config.infoCards);
+    renderUpdates(document.getElementById('updates-list'), config.recentUpdates);
   } catch (err) {
     console.error('[Harleys ODOO DEV] Config error:', err);
     const grid = document.getElementById('apps-grid');

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shared Login — Guide for Employees &amp; Managers</title>
+<link rel="stylesheet" href="assets/docs.css">
+</head>
+<body>
+<div class="page">
+
+  <a class="back-link" href="index.html">&larr; Back to documentation home</a>
+
+  <header class="doc-head">
+    <p class="eyebrow">User Guide — Harleys Odoo 19 Enterprise</p>
+    <h1>Shared Login &amp; "Logged by" Attribution</h1>
+    <p class="dek">Some accounts in the system are shared by more than one person on a team. This guide explains the short extra step you'll see when signing in to one of those accounts, and why records now show exactly who did what.</p>
+    <div class="meta">
+      <span><b>Audience</b> Employees and managers using shared accounts</span>
+      <span><b>Reading time</b> ~5 minutes</span>
+    </div>
+  </header>
+
+  <nav class="toc">
+    <b>Contents</b>
+    <ol>
+      <li><a href="#what">What is a shared account?</a></li>
+      <li><a href="#signing-in">Signing in to a shared account</a></li>
+      <li><a href="#why">Why you'll see "Logged by &lt;your name&gt;"</a></li>
+      <li><a href="#managers">For managers: setting up a shared account</a></li>
+      <li><a href="#walkthrough">What it looks like in practice</a></li>
+      <li><a href="#faq">Common questions</a></li>
+    </ol>
+  </nav>
+
+  <section id="what">
+    <h2>1. What is a shared account?</h2>
+    <p>Some roles are handed off between people over the course of a day or a shift — for example, a <b>Supply Chain Planner</b> account that whoever is on shift signs in to, rather than each person having a separate login for that role. That's a <b>shared (functional) account</b>: one login, used by more than one person depending on who's working, inside the same application employees already use every day.</p>
+    <figure class="shot">
+      <img src="screenshots/employee_attribution_docs/apps-launcher.png" alt="Screenshot: the application home screen employees land on after signing in">
+      <div class="placeholder">Screenshot: the application home screen employees land on after signing in</div>
+      <figcaption><b>apps-launcher.png</b> — the normal home screen. Shared accounts work exactly the same way once you're signed in.</figcaption>
+    </figure>
+    <p>The challenge with a shared account on its own is that every record it touches — a Purchase Order, an Indent Request, an update to an existing record — used to only show the shared account's name, never the person who was actually doing the work. This system closes that gap: it asks whoever signs in to a shared account to confirm who they are, and then tags every action they take with their own name automatically.</p>
+  </section>
+
+  <section id="signing-in">
+    <h2>2. Signing in to a shared account</h2>
+    <p>Nothing changes about how you normally sign in. You'll notice a difference only if the account you're using has been marked as shared:</p>
+    <ol>
+      <li>Sign in as usual with that account's own username and password.</li>
+      <li>Because the account is shared, you'll land on a second screen: <b>Confirm your identity</b>.</li>
+      <li>Enter <i>your own</i> personal login — the same one you already use elsewhere in the system for things like your employee self-service. This is not a new password to remember.</li>
+      <li>Once it's accepted, you're taken into the system as normal, working from the shared account exactly as before.</li>
+    </ol>
+    <div class="callout">
+      <b>If you use a personal, non-shared account</b>
+      You will never see this extra step. It only appears for accounts a manager has specifically marked as shared. See it in action in <a href="#walkthrough">§5 below</a>.
+    </div>
+  </section>
+
+  <section id="why">
+    <h2>3. Why you'll see "Logged by &lt;your name&gt;"</h2>
+    <p>From the moment you confirm your identity, anything you create or change while signed in — Purchase Orders, Indent Requests, status updates, notes, and more — is automatically tagged with your name in the activity log (the "chatter") on that record. You don't need to do anything for this to happen; it's automatic for the rest of your session.</p>
+    <p>This means that even though several people may use the same account across a day, a manager (or you) can always look at a record's history and see exactly who did what and when — the shared account's name no longer hides that.</p>
+    <p>For some record types, IT can also switch on deeper logging — so changes and deletions get attributed too, not just the message you'd normally see. That's a per-record-type setting IT controls; you don't need to do anything differently either way.</p>
+  </section>
+
+  <section id="managers">
+    <h2>4. For managers: setting up a shared account</h2>
+    <p>If you have administration access, you can mark any account as shared. Each step below is matched to the screen you'll see.</p>
+
+    <h3><span class="step-num">1</span>Open Users &amp; Companies</h3>
+    <p>Go to <b>Settings → Users &amp; Companies → Users</b>.</p>
+    <figure class="shot">
+      <img src="screenshots/employee_attribution_docs/settings-users-menu.png" alt="Screenshot: Settings → General Settings, with the Users & Companies menu open">
+      <div class="placeholder">Screenshot: Settings → General Settings, with the Users &amp; Companies menu open</div>
+      <figcaption><b>settings-users-menu.png</b> — from General Settings, open Users &amp; Companies → Users.</figcaption>
+    </figure>
+
+    <h3><span class="step-num">2</span>Open the account</h3>
+    <p>Find the account (search by name, e.g. "planner") and open its record.</p>
+    <figure class="shot">
+      <img src="screenshots/employee_attribution_docs/users-list-planner.png" alt="Screenshot: Users list filtered to 'planner' — Supply Chain Planner / planner@harleys.com">
+      <div class="placeholder">Screenshot: Users list filtered to "planner" — Supply Chain Planner / planner@harleys.com</div>
+      <figcaption><b>users-list-planner.png</b></figcaption>
+    </figure>
+
+    <h3><span class="step-num">3</span>Open the Shared Login tab</h3>
+    <p>On the user's record, switch to the <b>Shared Login</b> tab, next to Access Rights and Preferences.</p>
+    <figure class="shot">
+      <img src="screenshots/employee_attribution_docs/user-record-opened.png" alt="Screenshot: user record open, showing the Access Rights, Shared Login, Preferences and other tabs">
+      <div class="placeholder">Screenshot: user record open, showing the Access Rights, Shared Login, Preferences and other tabs</div>
+      <figcaption><b>user-record-opened.png</b> — the <b>Shared Login</b> tab sits alongside the account's other settings.</figcaption>
+    </figure>
+    <figure class="shot">
+      <img src="screenshots/employee_attribution_docs/shared-login-tab-off.png" alt="Screenshot: Shared Login tab, 'Shared / Functional Login' checkbox unchecked">
+      <div class="placeholder">Screenshot: Shared Login tab, "Shared / Functional Login" checkbox unchecked</div>
+      <figcaption><b>shared-login-tab-off.png</b> — before the change: nothing is enabled yet.</figcaption>
+    </figure>
+
+    <h3><span class="step-num">4</span>Check "Shared / Functional Login"</h3>
+    <figure class="shot">
+      <img src="screenshots/employee_attribution_docs/shared-login-tab-on.png" alt="Screenshot: 'Shared / Functional Login' checked; Authorized Employees field now visible, defaulting to any employee with a valid login">
+      <div class="placeholder">Screenshot: "Shared / Functional Login" checked; Authorized Employees field now visible</div>
+      <figcaption><b>shared-login-tab-on.png</b> — once checked, an <b>Authorized Employees</b> field appears. Left empty, it defaults to "any employee with a valid employee login."</figcaption>
+    </figure>
+
+    <h3><span class="step-num">5</span>Optionally restrict who can use it</h3>
+    <p>To limit the account to specific people, add them under <b>Authorized Employees</b>:</p>
+    <figure class="shot">
+      <img src="screenshots/employee_attribution_docs/authorized-employees-search-1.png" alt="Screenshot: Authorized Employees search — typing 'vinee' finds a matching employee">
+      <div class="placeholder">Screenshot: Authorized Employees search — typing "vinee" finds a matching employee</div>
+      <figcaption><b>authorized-employees-search-1.png</b> — start typing a name to search.</figcaption>
+    </figure>
+    <figure class="shot">
+      <img src="screenshots/employee_attribution_docs/authorized-employees-search-2.png" alt="Screenshot: Authorized Employees search — typing 'bharg' shows two matching employees">
+      <div class="placeholder">Screenshot: Authorized Employees search — typing "bharg" shows two matching employees</div>
+      <figcaption><b>authorized-employees-search-2.png</b> — add as many people as should be allowed to use this account.</figcaption>
+    </figure>
+    <figure class="shot">
+      <img src="screenshots/employee_attribution_docs/authorized-employees-saved.png" alt="Screenshot: two employees added to Authorized Employees and saved">
+      <div class="placeholder">Screenshot: two employees added to Authorized Employees and saved</div>
+      <figcaption><b>authorized-employees-saved.png</b> — only the people listed here may now confirm their identity on this account.</figcaption>
+    </figure>
+
+    <h3><span class="step-num">6</span>Save</h3>
+    <p>There's nothing else to configure — the change takes effect immediately, no restart needed. The <b>Shared Login</b> tab itself is only visible to users with administration access, so team members can't turn it on or off themselves.</p>
+  </section>
+
+  <section id="walkthrough">
+    <h2>5. What it looks like in practice</h2>
+    <p>A full round trip: one shared account, used by two different employees back to back, each correctly identified on their own actions.</p>
+
+    <h3><span class="step-num">1</span>First employee signs in with the shared account</h3>
+    <figure class="shot">
+      <img src="screenshots/employee_attribution_docs/login-planner.png" alt="Screenshot: standard sign-in screen with the shared account's credentials entered">
+      <div class="placeholder">Screenshot: standard sign-in screen with the shared account's credentials entered</div>
+      <figcaption><b>login-planner.png</b> — no different from any other sign-in.</figcaption>
+    </figure>
+
+    <h3><span class="step-num">2</span>They confirm their identity</h3>
+    <figure class="shot">
+      <img src="screenshots/employee_attribution_docs/confirm-identity-employee-1.png" alt="Screenshot: Confirm your identity page, first employee's personal login entered">
+      <div class="placeholder">Screenshot: "Confirm your identity" page, first employee's personal login entered</div>
+      <figcaption><b>confirm-identity-employee-1.png</b> — appears only because this account is shared.</figcaption>
+    </figure>
+
+    <h3><span class="step-num">3</span>They do their work as normal</h3>
+    <figure class="shot">
+      <img src="screenshots/employee_attribution_docs/indent-created-tagged.png" alt="Screenshot: a new Indent Request's activity log showing it was logged by the first employee">
+      <div class="placeholder">Screenshot: a new record's activity log, tagged with the first employee's name</div>
+      <figcaption><b>indent-created-tagged.png</b> — the record's activity log shows who actually created it.</figcaption>
+    </figure>
+
+    <h3><span class="step-num">4</span>They log out at the end of their shift</h3>
+    <figure class="shot">
+      <img src="screenshots/employee_attribution_docs/logout-menu.png" alt="Screenshot: account menu open with the Log out option">
+      <div class="placeholder">Screenshot: account menu open with the Log out option</div>
+      <figcaption><b>logout-menu.png</b> — a normal sign-out. The shared account is now free for the next person.</figcaption>
+    </figure>
+
+    <h3><span class="step-num">5</span>The next employee signs in with the same shared account</h3>
+    <figure class="shot">
+      <img src="screenshots/employee_attribution_docs/login-planner-2.png" alt="Screenshot: standard sign-in screen, the shared account's credentials entered again for the next shift">
+      <div class="placeholder">Screenshot: standard sign-in screen, the shared account's credentials entered again</div>
+      <figcaption><b>login-planner-2.png</b> — same account, same credentials, next person on shift.</figcaption>
+    </figure>
+    <figure class="shot">
+      <img src="screenshots/employee_attribution_docs/confirm-identity-employee-2.png" alt="Screenshot: Confirm your identity page, second employee's own personal login entered">
+      <div class="placeholder">Screenshot: "Confirm your identity" page, second employee's own personal login entered</div>
+      <figcaption><b>confirm-identity-employee-2.png</b> — a different person, confirming with their own login.</figcaption>
+    </figure>
+
+    <h3><span class="step-num">6</span>Their own action gets their own tag</h3>
+    <figure class="shot">
+      <img src="screenshots/employee_attribution_docs/indent-status-change-tagged.png" alt="Screenshot: the same record, a status change tagged with the second employee's name, while the original entry keeps the first employee's name">
+      <div class="placeholder">Screenshot: the same record, later change tagged with the second employee, original entry unchanged</div>
+      <figcaption><b>indent-status-change-tagged.png</b> — two different people, sharing one account, each show up correctly for their own action on the same record.</figcaption>
+    </figure>
+  </section>
+
+  <section id="faq">
+    <h2>6. Common questions</h2>
+    <div class="callout warn">
+      <b>What if my name doesn't show up correctly?</b>
+      The main record itself will always show the correct name. Line items and similar sub-records only show it once IT has switched on deeper logging for that record type — if you spot one that hasn't, flag it to IT rather than assuming something's broken.
+    </div>
+    <div class="callout warn">
+      <b>What happens if a record is deleted?</b>
+      Deletions are logged too. For records with no natural place to show it, the deletion is kept in a separate administration log instead, so it's never lost.
+    </div>
+    <div class="callout warn">
+      <b>Does this create a new password I have to remember?</b>
+      No. You use your existing personal login — the same one you already use for self-service — nothing new to set up.
+    </div>
+    <div class="callout warn">
+      <b>Will this slow down my sign-in every time?</b>
+      It's a single extra screen shown once per sign-in session on a shared account, not on every action you take afterward.
+    </div>
+  </section>
+
+  <footer>
+    User guide — Harleys Odoo 19 Enterprise. For the technical implementation reference, see the <a href="developer-guide.html">Developer Guide</a>.
+  </footer>
+
+</div>
+<script src="assets/docs.js"></script>
+</body>
+</html>

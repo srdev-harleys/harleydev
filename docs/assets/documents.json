@@ -1,0 +1,11 @@
+{
+  "documents": [
+    {
+      "title": "Employee Attribution — User-to-Employee Activity Logs",
+      "description": "How shared functional accounts are still tied back to the employee behind them — a login-time identity check, automatic per-message attribution, and opt-in change/deletion logging for individual models.",
+      "updated": "2026-07-23",
+      "userGuide": "user-guide.html",
+      "developerGuide": "developer-guide.html"
+    }
+  ]
+}

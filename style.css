@@ -11,10 +11,11 @@
    7. Primary Button (hover + ripple)
    8. Application Cards (glassmorphism)
    9. Information Cards
-   10. Footer
-   11. Responsive (Mobile Optimized)
-   12. Dark Mode (prefers-color-scheme)
-   13. Accessibility (reduced motion / focus)
+   10. Recent Updates
+   11. Footer
+   12. Responsive (Mobile Optimized)
+   13. Dark Mode (prefers-color-scheme)
+   14. Accessibility (reduced motion / focus)
    ========================================================================== */
 
 /* ==========================================================================
@@ -229,6 +230,22 @@ img { display: block; max-width: 100%; }
   border-radius: 999px;
   white-space: nowrap;
   box-shadow: 0 4px 12px rgba(181, 126, 220, 0.35);
+}
+
+.topnav__nav { display: flex; align-items: center; gap: 6px; }
+
+.topnav__link {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.topnav__link:hover, .topnav__link:focus-visible {
+  color: var(--primary);
+  background: var(--accent-soft);
 }
 
 .topnav__right { display: flex; align-items: center; }
@@ -574,7 +591,56 @@ img { display: block; max-width: 100%; }
 .info-card__desc { color: var(--text-muted); font-size: 0.96rem; }
 
 /* ==========================================================================
-   10. FOOTER
+   10. RECENT UPDATES
+   ========================================================================== */
+.updates { padding-bottom: 64px; }
+
+.updates__list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.update-item {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: 20px;
+  padding: 22px 26px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid var(--surface-border);
+  box-shadow: var(--shadow);
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.update-item:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); }
+
+.update-item__date {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.update-item__body { display: flex; flex-direction: column; gap: 6px; }
+.update-item__title { font-size: 1.02rem; font-weight: 700; }
+.update-item__desc { color: var(--text-muted); font-size: 0.94rem; }
+.update-item__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--primary);
+  text-decoration: none;
+  width: fit-content;
+}
+.update-item__link:hover { color: var(--accent); text-decoration: underline; }
+.update-item__link svg { width: 14px; height: 14px; }
+
+/* ==========================================================================
+   11. FOOTER
    ========================================================================== */
 .footer {
   margin-top: auto;
@@ -594,21 +660,25 @@ img { display: block; max-width: 100%; }
 .footer__platform { color: var(--accent); font-weight: 600; font-size: 0.92rem; }
 .footer__meta { display: flex; align-items: center; gap: 10px; color: var(--text-muted); font-size: 0.85rem; }
 .footer__dot { opacity: 0.5; }
+.footer__docs-link { color: var(--text-muted); text-decoration: none; transition: color var(--dur) var(--ease); }
+.footer__docs-link:hover, .footer__docs-link:focus-visible { color: var(--accent); text-decoration: underline; }
 
 /* ==========================================================================
-   11. RESPONSIVE (Mobile Optimized)
+   12. RESPONSIVE (Mobile Optimized)
    ========================================================================== */
 @media (max-width: 640px) {
   .topnav__title { display: none; }
   .topnav__brand { gap: 8px; }
+  .topnav__link { font-size: 0.82rem; padding: 6px 10px; }
   .clock { font-size: 0.78rem; padding: 5px 9px; }
   .apps__grid { grid-template-columns: 1fr; }
   .info__grid { grid-template-columns: 1fr; }
+  .update-item { grid-template-columns: 1fr; gap: 6px; }
   .footer { flex-direction: column; text-align: center; }
 }
 
 /* ==========================================================================
-   12. DARK MODE (prefers-color-scheme)
+   13. DARK MODE (prefers-color-scheme)
    ========================================================================== */
 @media (prefers-color-scheme: dark) {
   :root {
@@ -640,7 +710,7 @@ img { display: block; max-width: 100%; }
 }
 
 /* ==========================================================================
-   13. ACCESSIBILITY (reduced motion / focus)
+   14. ACCESSIBILITY (reduced motion / focus)
    ========================================================================== */
 :focus-visible {
   outline: 3px solid var(--accent);
