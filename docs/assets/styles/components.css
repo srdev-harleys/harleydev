@@ -1,0 +1,25 @@
+/* Callout boxes and the table-of-contents box. */
+.callout {
+  border-left: 3px solid var(--good);
+  background: var(--good-bg);
+  padding: 0.8rem 1.1rem;
+  border-radius: 0 6px 6px 0;
+  margin: 1.1rem 0;
+  font-size: 0.95rem;
+}
+.callout.warn { border-left-color: var(--warn); background: var(--warn-bg); }
+.callout b { display: block; margin-bottom: 0.2rem; font-family: var(--sans); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
+
+.toc {
+  font-family: var(--sans);
+  font-size: 0.92rem;
+  background: var(--paper-alt);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 1.2rem 1.6rem;
+  margin: 1.5rem 0 2rem;
+}
+.toc b { display: block; font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 0.6rem; }
+.toc ol { margin: 0; padding-left: 1.3rem; }
+.toc a { color: var(--ink); text-decoration: none; }
+.toc a:hover { color: var(--primary); text-decoration: underline; }

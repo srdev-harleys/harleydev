@@ -1,0 +1,15 @@
+/* ==========================================================================
+   Responsive (Mobile Optimized)
+   ========================================================================== */
+@media (max-width: 640px) {
+  .topnav { flex-wrap: wrap; row-gap: 8px; }
+  .topnav__title { display: none; }
+  .topnav__brand { gap: 8px; }
+  .topnav__nav { gap: 2px; order: 3; width: 100%; justify-content: center; }
+  .topnav__link { font-size: 0.8rem; padding: 5px 9px; }
+  .clock { font-size: 0.78rem; padding: 5px 9px; }
+  .apps__grid { grid-template-columns: 1fr; }
+  .info__grid { grid-template-columns: 1fr; }
+  .update-item { grid-template-columns: 1fr; gap: 6px; }
+  .footer { flex-direction: column; text-align: center; }
+}

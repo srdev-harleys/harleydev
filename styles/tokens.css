@@ -1,0 +1,31 @@
+/* Brand Design Tokens — blush/sky/rose on white, black text, confirmed from harleys.com. */
+:root {
+  /* ---- Palette ---- */
+  --color-bg: #FFFFFF;
+  --color-fg: #0A0A0A;         /* Black text */
+  --color-muted-fg: #4A4A4A;   /* Muted/secondary text */
+  --color-blush: #F5D1D8;      /* Soft pink — the pink "section" wash */
+  --color-sky: #CBEBF2;        /* Soft blue — primary interactive accent (links, icons, buttons) */
+  --color-sky-700: #2B8CA3;    /* Deeper blue — hover states, primary text */
+  --color-sky-900: #1B5B6A;    /* Deepest blue — active/pressed */
+  --color-rose: #D45770;       /* Rose — secondary two-tone accent (pairs with blue in gradients) */
+  --color-rose-700: #B33F57;   /* Deeper rose */
+  --color-rose-900: #7A2C3D;   /* Deepest rose */
+  --color-gold: #D4AF37;       /* Featured/highlight accent */
+  --color-mint: #2A9D90;       /* Success / online status only */
+  --color-red: #EF4444;        /* Danger / offline status */
+  --color-border: rgba(10, 10, 10, 0.10);
+
+  /* ---- Fonts: Arial is the real site-wide default; the rest are
+     opt-in accent fonts harleys.com applies per-component. ---- */
+  --font-body: Arial, Helvetica, sans-serif;
+  --font-heading: 'Montserrat', Arial, Helvetica, sans-serif;
+  --font-script: 'Imperial Script', cursive; /* decorative accent only — never body copy */
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+  /* ---- Shared shape & motion ---- */
+  --radius: 16px;
+  --radius-sm: 10px;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur: 0.35s;
+}

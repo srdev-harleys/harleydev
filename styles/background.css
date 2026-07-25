@@ -1,0 +1,31 @@
+/* Background — the blush-to-sky wash from harleys.com's own hero gradient + a soft grid. */
+.bg-gradient {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background:
+    radial-gradient(85% 55% at 50% -8%, var(--color-sky) 0%, transparent 62%),
+    radial-gradient(60% 60% at 96% 55%, var(--color-sky) 0%, transparent 55%),
+    radial-gradient(42% 42% at 4% 96%, var(--color-blush) 0%, transparent 50%),
+    linear-gradient(160deg, #eef8fc 0%, #ffffff 42%, #f5fbfd 100%);
+  background-size: 200% 200%;
+  animation: gradientShift 18s ease infinite;
+}
+
+@keyframes gradientShift {
+  0%   { background-position: 0% 0%; }
+  50%  { background-position: 100% 100%; }
+  100% { background-position: 0% 0%; }
+}
+
+.bg-grid {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(10, 10, 10, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(10, 10, 10, 0.045) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(circle at 50% 30%, #000 0%, transparent 75%);
+  -webkit-mask-image: radial-gradient(circle at 50% 30%, #000 0%, transparent 75%);
+}

@@ -1,0 +1,43 @@
+/* Article page shell: .page container, header meta, back-link, footer. */
+.page {
+  max-width: 880px;
+  margin: 0 auto;
+  background: var(--paper);
+  padding: 3rem 3.2rem 5rem;
+}
+header.doc-head {
+  border-bottom: 3px solid var(--ink);
+  padding-bottom: 1.5rem;
+  margin-bottom: 2.2rem;
+}
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.2rem;
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+.meta b { color: var(--ink); }
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  text-decoration: none;
+  margin-bottom: 1.2rem;
+}
+.back-link:hover { color: var(--primary); text-decoration: underline; }
+
+footer {
+  margin-top: 3rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid var(--line);
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+footer a { color: var(--primary); }

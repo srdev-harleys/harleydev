@@ -12,8 +12,7 @@
   <meta name="keywords" content="Harleys Fine Baking, ODOO DEV, Odoo 19, Testing Environment, Enterprise" />
   <meta name="author" content="Harleys Fine Baking ODOO DEV Development Team" />
   <meta name="robots" content="noindex, nofollow" />
-  <meta name="theme-color" content="#1E3A5F" media="(prefers-color-scheme: light)" />
-  <meta name="theme-color" content="#0B1622" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#F5D1D8" />
 
   <!-- ============================================================
        OPEN GRAPH TAGS
@@ -27,20 +26,23 @@
   <!-- ============================================================
        FAVICON
        ============================================================ -->
-  <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
-  <link rel="apple-touch-icon" href="assets/favicon.ico" />
+  <link rel="icon" type="image/png" href="assets/favicon.png" />
+  <link rel="apple-touch-icon" href="assets/favicon.png" />
 
   <!-- ============================================================
-       FONTS — Inter (self-hosted fallback handled via system stack)
+       FONTS — body text is plain Arial (matching harleys.com's actual
+       site-wide default); Montserrat + Imperial Script are opt-in accent
+       fonts used selectively for headings/branding, same as the real site.
        ============================================================ -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Imperial+Script&display=swap" rel="stylesheet" />
 
   <!-- ============================================================
-       STYLES
+       STYLES — see styles/ for the full breakdown (tokens, per-section
+       partials); this is the only stylesheet index.html links to.
        ============================================================ -->
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="styles/main.css" />
 </head>
 
 <body>
@@ -68,6 +70,8 @@
       <span class="env-badge" id="env-badge">Testing</span>
     </div>
     <nav class="topnav__nav" aria-label="Site">
+      <a class="topnav__link" href="https://admin.taildfc619.ts.net/" target="_blank" rel="noopener noreferrer">Dev</a>
+      <a class="topnav__link" href="https://github.com/users/harleystech/projects/1/views/1" target="_blank" rel="noopener noreferrer">Projects</a>
       <a class="topnav__link" href="docs/index.html">Documentation</a>
     </nav>
     <div class="topnav__right">
@@ -94,7 +98,7 @@
         environment. Only authorized users should access this system.
       </p>
 
-      <a class="btn-primary" id="launch-btn" href="https://8fvgvhc8-8069.inc1.devtunnels.ms/"
+      <a class="btn-primary" id="launch-btn" href="https://admin.taildfc619.ts.net/"
          target="_blank" rel="noopener noreferrer" role="button">
         <svg class="btn-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
           <path fill="currentColor" d="M14 3v2h3.59l-9.3 9.29 1.42 1.42L19 6.41V10h2V3m-2 16H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7h-2Z"/>
@@ -110,7 +114,7 @@
       <h2 class="section-title" id="apps-title">Applications</h2>
       <p class="section-subtitle">Select an application to launch in a new tab.</p>
       <div class="apps__grid" id="apps-grid" role="list">
-        <!-- Cards injected by script.js -->
+        <!-- Cards injected by scripts/main.js -->
       </div>
     </section>
 
@@ -120,7 +124,7 @@
     <section class="info" aria-labelledby="info-title">
       <h2 class="section-title" id="info-title">Environment Information</h2>
       <div class="info__grid" id="info-grid" role="list">
-        <!-- Cards injected by script.js -->
+        <!-- Cards injected by scripts/main.js -->
       </div>
     </section>
 
@@ -131,7 +135,7 @@
       <h2 class="section-title" id="updates-title">Recent Updates</h2>
       <p class="section-subtitle">Documentation and workflow changes, most recent first.</p>
       <div class="updates__list" id="updates-list" role="list">
-        <!-- Items injected by script.js -->
+        <!-- Items injected by scripts/main.js -->
       </div>
     </section>
   </main>
@@ -154,8 +158,10 @@
   </footer>
 
   <!-- ============================================================
-       SCRIPTS — Modular, no external libraries
+       SCRIPTS — ES modules, no external libraries; see scripts/modules/
+       for the per-concern breakdown. This is the only script index.html
+       references directly.
        ============================================================ -->
-  <script src="script.js"></script>
+  <script type="module" src="scripts/main.js"></script>
 </body>
 </html>

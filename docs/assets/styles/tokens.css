@@ -1,0 +1,27 @@
+/* Docs Design Tokens — maps root tokens.css to the --ink/--paper names below. */
+@import url("../../../styles/tokens.css");
+
+:root {
+  --primary: var(--color-sky-700);
+  --primary-foreground: #000000; /* white-on-blue-700 fails AA (~3.9:1); black clears 5:1+ */
+  --primary-700: var(--color-sky-900);
+  --accent: var(--color-sky);
+  --accent-gold: var(--color-gold);
+  --good: #2f6b4f;
+  --good-bg: #e2ede7;
+  --warn: #8a5a12;
+  --warn-bg: #f6ecd8;
+
+  --ink: var(--color-fg);
+  --ink-soft: var(--color-muted-fg);
+  --paper: #ffffff;
+  --paper-alt: rgba(245, 209, 216, 0.28);
+  --line: var(--color-border);
+
+  --shadow: 0 10px 28px rgba(43, 140, 163, 0.12);
+  --shadow-hover: 0 18px 44px rgba(43, 140, 163, 0.20);
+
+  --mono: var(--font-mono);
+  --sans: var(--font-heading);
+  --serif: Georgia, "Iowan Old Style", "Times New Roman", serif;
+}

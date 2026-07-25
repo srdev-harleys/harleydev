@@ -1,0 +1,10 @@
+/* Reset & base element styles. */
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--paper-alt);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 16px;
+  line-height: 1.65;
+}

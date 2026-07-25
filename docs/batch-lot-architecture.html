@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Batch / Lot Architecture — Harleys ERP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --panel2: #1e222b;
+    --border: #2a2f3a;
+    --text: #e7e9ee;
+    --muted: #9aa2b1;
+    --accent: #7c5cff;
+    --accent2: #29b6f6;
+    --good: #3ecf8e;
+    --warn: #f0a339;
+    --bad: #ff5c5c;
+    --code-bg: #11141a;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 48px 24px 120px; }
+  header.page {
+    margin-bottom: 48px;
+  }
+  header.page h1 {
+    font-size: 2.1rem;
+    margin: 0 0 8px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  header.page p.sub {
+    color: var(--muted);
+    font-size: 1.05rem;
+    max-width: 760px;
+  }
+  nav.toc {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    margin-top: 28px;
+  }
+  nav.toc h2 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 10px; }
+  nav.toc ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 32px; }
+  nav.toc a { color: var(--accent2); text-decoration: none; }
+  nav.toc a:hover { text-decoration: underline; }
+
+  section { margin: 64px 0; }
+  section h2 {
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 14px;
+  }
+  section h2 .num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--panel2); border: 1px solid var(--border);
+    font-size: 0.9rem; color: var(--accent2); flex-shrink: 0;
+  }
+  h3 { font-size: 1.1rem; color: var(--text); margin-top: 32px; }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px 24px;
+    margin: 18px 0;
+  }
+  .card.finding { border-left: 4px solid var(--warn); }
+  .card.bug { border-left: 4px solid var(--bad); }
+  .card.confirmed { border-left: 4px solid var(--good); }
+  .card.open { border-left: 4px solid var(--accent2); }
+
+  .tag {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    padding: 3px 9px;
+    border-radius: 999px;
+    margin-bottom: 10px;
+  }
+  .tag.core { background: rgba(41,182,246,.15); color: var(--accent2); }
+  .tag.harleys { background: rgba(124,92,255,.18); color: var(--accent); }
+  .tag.bug { background: rgba(255,92,92,.15); color: var(--bad); }
+  .tag.confirmed { background: rgba(62,207,142,.15); color: var(--good); }
+  .tag.open { background: rgba(240,163,57,.15); color: var(--warn); }
+
+  code, pre {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 0.86rem;
+  }
+  code.inline {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    padding: 1px 6px;
+    border-radius: 5px;
+    color: #ffcb6b;
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    overflow-x: auto;
+    color: #cdd6e6;
+  }
+  pre .file {
+    display: block;
+    color: var(--muted);
+    font-size: 0.75rem;
+    margin-bottom: 8px;
+  }
+
+  /* flow diagram, pure css/flex, no external deps */
+  .flow {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    overflow-x: auto;
+    padding: 8px 0 18px;
+  }
+  .flow .step {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    min-width: 170px;
+    flex-shrink: 0;
+    text-align: center;
+  }
+  .flow .step .t { font-weight: 700; font-size: 0.92rem; }
+  .flow .step .d { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+  .flow .arrow {
+    display: flex; align-items: center; justify-content: center;
+    padding: 0 10px; color: var(--muted); font-size: 1.3rem; flex-shrink: 0;
+  }
+  .flow.vertical { flex-direction: column; align-items: stretch; }
+  .flow.vertical .arrow { padding: 4px 0; }
+
+  table.map {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 18px 0;
+    font-size: 0.92rem;
+  }
+  table.map th, table.map td {
+    border: 1px solid var(--border);
+    padding: 10px 12px;
+    text-align: left;
+    vertical-align: top;
+  }
+  table.map th { background: var(--panel2); color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: .04em; }
+  table.map td.status-good { color: var(--good); }
+  table.map td.status-bad { color: var(--bad); }
+  table.map td.status-warn { color: var(--warn); }
+
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; margin: 8px 0 24px; font-size: 0.82rem; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+  footer { margin-top: 80px; color: var(--muted); font-size: 0.82rem; border-top: 1px solid var(--border); padding-top: 20px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page">
+    <h1>Batch / Lot Architecture Across the Harleys ERP</h1>
+    <p class="sub">How a batch/lot number is created, how its quantity is tracked, and how every module
+    that touches stock — Manufacturing, Inventory, Internal Transfers, Purchase Receipts, Sales Deliveries —
+    reads from and writes to the <em>same</em> underlying data, not separate per-module logic. Built from
+    direct source verification against <code class="inline">odoo/addons/stock</code> and the
+    <code class="inline">harleys_customization</code> module, not assumption.</p>
+
+    <nav class="toc">
+      <h2>Contents</h2>
+      <ol>
+        <li><a href="#foundation">The two foundational models</a></li>
+        <li><a href="#engine">The reservation engine (shared everywhere)</a></li>
+        <li><a href="#quantity-flow">Where quantities actually get set</a></li>
+        <li><a href="#internal">Internal Transfers — the 3-stage flow</a></li>
+        <li><a href="#purchase">Purchase Receipts — the confirmed bug</a></li>
+        <li><a href="#sales">Sales Deliveries — open question</a></li>
+        <li><a href="#built">What we built, and where it applies today</a></li>
+        <li><a href="#map">Full process map</a></li>
+        <li><a href="#next">Open questions / next steps</a></li>
+      </ol>
+    </nav>
+  </header>
+
+  <section id="foundation">
+    <h2><span class="num">1</span>The two foundational models</h2>
+    <p>Every batch/lot conversation in Odoo ultimately comes down to two models. Everything else —
+    Manufacturing's "Lot/Serial Numbers" screen, Inventory's Physical Inventory count, the Batch column
+    we built — is a <em>view</em> onto these two.</p>
+
+    <div class="flow">
+      <div class="step">
+        <div class="t">stock.lot</div>
+        <div class="d">Identity: name, product_id, company_id. Created once. Not scoped to any module — Manufacturing's "Lot/Serial Numbers" menu is just the management screen for this same model.</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="step">
+        <div class="t">stock.quant</div>
+        <div class="d">The ledger: (product, lot, location) → quantity, reserved_quantity, available_quantity. This is what "Physical Inventory" writes to, and what every reservation everywhere else reads from.</div>
+      </div>
+    </div>
+
+    <p>This is why a lot created from Manufacturing's product screen is "available universally" — there is
+    no per-module copy. <code class="inline">stock.lot</code> is global master data; <code class="inline">stock.quant</code>
+    is the single ledger every operation type (Manufacturing consumption, Internal Transfer, Receipt, Delivery)
+    checks before it lets you reserve or move anything.</p>
+
+    <div class="card finding">
+      <span class="tag harleys">Harleys customization found</span>
+      <p><code class="inline">models/stock_picking.py</code> — <code class="inline">StockLot._check_unique_lot()</code>
+      is overridden to a no-op (<code class="inline">return</code> with nothing). Core Odoo normally prevents
+      two lots with the same name on the same product; Harleys has deliberately disabled that check globally.
+      Worth knowing this is intentional and company-wide, not a bug, if duplicate-looking lot names ever show up.</p>
+    </div>
+  </section>
+
+  <section id="engine">
+    <h2><span class="num">2</span>The reservation engine — one mechanism, every module</h2>
+    <p>There is no separate "Internal Transfer reservation logic" vs "Purchase reservation logic." Every
+    operation type funnels through the same two methods on <code class="inline">stock.move</code>:</p>
+
+    <table class="map">
+      <tr><th>Method</th><th>What it does</th><th>When it runs</th></tr>
+      <tr>
+        <td><code class="inline">_action_assign()</code></td>
+        <td>Automatic reservation pass. Looks at real <code class="inline">stock.quant</code> availability and creates <code class="inline">stock.move.line</code> rows — one per distinct (location, lot, package, owner) combination it finds.</td>
+        <td>Confirming/checking availability on any transfer, receipt, or delivery.</td>
+      </tr>
+      <tr>
+        <td><code class="inline">_set_lot_ids()</code></td>
+        <td>Inverse of the <code class="inline">lot_ids</code> field. Runs the same quant-based allocation, but triggered by a user manually adding/removing a lot rather than the automatic pass. This is the method our whole Batch/Batch Qty UI sits on top of.</td>
+        <td>Whenever <code class="inline">lot_ids</code> is written — i.e. whenever a batch is added or removed through our widget, on any picking type.</td>
+      </tr>
+    </table>
+    <p>This matters for the map below: because the engine is shared, anything that looks "different" between
+    Internal Transfers and Purchase/Sales is not a different reservation algorithm — it's something
+    module-specific layered on top (a view, a picking-type-specific override, or a business rule), which is
+    exactly what section 5 finds.</p>
+  </section>
+
+  <section id="quantity-flow">
+    <h2><span class="num">3</span>Where quantities actually get set</h2>
+    <div class="flow vertical">
+      <div class="step">
+        <div class="t">Manufacturing → Products → Lot/Serial Numbers</div>
+        <div class="d">Creates the stock.lot record (identity only — no quantity yet)</div>
+      </div>
+      <div class="arrow">↓</div>
+      <div class="step">
+        <div class="t">Inventory → Physical Inventory (Adjustments)</div>
+        <div class="d">Sets <code class="inline">inventory_quantity</code> on a stock.quant for that (product, lot, location) — the physical count</div>
+      </div>
+      <div class="arrow">↓</div>
+      <div class="step">
+        <div class="t">stock.quant.quantity / available_quantity</div>
+        <div class="d">Now real. Every reservation anywhere in the system reads from this exact number.</div>
+      </div>
+      <div class="arrow">↓</div>
+      <div class="step">
+        <div class="t">_action_assign() / _set_lot_ids()</div>
+        <div class="d">Whatever module you're in — Internal Transfer, Receipt, Delivery, MO consumption — this is what actually gets checked and reserved against</div>
+      </div>
+    </div>
+    <p>This is exactly the flow you described, and it's confirmed against source, not inferred: the lot is an
+    identity created in one place, its quantity is a fact established in a different place (Physical Inventory),
+    and the reservation engine is a third, shared piece that reads both.</p>
+  </section>
+
+  <section id="internal">
+    <h2><span class="num">4</span>Internal Transfers — the 3-stage flow you described</h2>
+    <p>Sender → virtual location → receiver is a real, standard Odoo mechanism, not something informal —
+    and Harleys has its own code layered directly on top of it.</p>
+
+    <div class="flow">
+      <div class="step"><div class="t">Sender warehouse</div><div class="d">stock.picking, picking_type_code = internal. Batches here are being <em>sent</em> — fetched from real, already-available stock. No "add new batch" needed, only "which of what I have."</div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="t">Transit location</div><div class="d">res.company.internal_transit_location_id — a virtual holding point. Standard Odoo "resupply from another warehouse" route (stock_warehouse.py: resupply_wh_ids / resupply_route_ids) auto-generates this leg.</div></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="t">Receiver warehouse</div><div class="d">A second, chained internal transfer picking. Batches here are being <em>received</em> — recording what actually arrived, from which lot, how much.</div></div>
+    </div>
+
+    <div class="card finding">
+      <span class="tag harleys">Harleys customization found</span>
+      <pre><span class="file">harleys_customization/models/stock_picking.py — StockPicking.button_validate()</span>def button_validate(self):
+    self = self.filtered(lambda p: p.state != 'done')
+    transit_picking_ids = self.with_user(SUPERUSER_ID).filtered(
+        lambda picking: picking.location_id.usage == 'transit'
+    ).ids
+    transit_pickings = self.browse(transit_picking_ids)
+    normal_pickings = self - transit_pickings
+    ...
+    if transit_pickings:
+        try:
+            result = super(StockPicking, transit_pickings).button_validate()
+        except AccessError:
+            result = super(StockPicking, transit_pickings.with_user(SUPERUSER_ID)).button_validate()</pre>
+      <p>Harleys specifically detects when a picking's source location is the transit location and validates
+      it with elevated access if a normal user hits an <code class="inline">AccessError</code>. This tells us
+      the transit leg is a real, deliberately-supported flow at Harleys — and that whoever validates the
+      receiver-side leg may not otherwise have direct write access to the transit location, which this
+      override works around.</p>
+    </div>
+
+    <p><strong>Where the Batch/Batch Qty widget fits:</strong> both legs are <code class="inline">picking_type_code = 'internal'</code>,
+    so both already get the full Batch/Batch Qty/icon-Details treatment we built. The sender's leg is where
+    you'd expect to mostly <em>select</em> existing batches (real stock, real availability); the receiver's
+    leg is where you'd expect to mostly <em>confirm/adjust</em> quantities against what physically showed up.</p>
+  </section>
+
+  <section id="purchase">
+    <h2><span class="num">5</span>Purchase Receipts (GRN) — the confirmed bug</h2>
+    <p>This is the one with an actual, verified root cause — not a guess.</p>
+
+    <div class="card bug">
+      <span class="tag bug">Confirmed via source</span>
+      <pre><span class="file">harleys_customization/models/stock_picking.py — StockMove._prepare_move_line_vals()</span>def _prepare_move_line_vals(self, quantity=None, reserved_quant=None):
+    vals = super(StockMove, self)._prepare_move_line_vals(quantity, reserved_quant)
+    # Override quantity to 0 for GRN
+    if self.picking_code == 'incoming':
+        vals['quantity'] = 0
+    return vals</pre>
+      <p>Every time a new <code class="inline">stock.move.line</code> is prepared on a Receipt
+      (<code class="inline">picking_code == 'incoming'</code>), Harleys forces its quantity to <strong>zero</strong>,
+      regardless of what the reservation engine calculated. This is almost certainly deliberate — a GRN
+      (Goods Receipt Note) workflow usually wants the receiving clerk to manually confirm what physically
+      arrived, not have the system silently pre-fill a guessed quantity.</p>
+    </div>
+
+    <div class="card bug">
+      <span class="tag bug">Why this breaks batch selection</span>
+      <p>Core Odoo's own <code class="inline">_compute_lot_ids</code> (the method that decides which lots
+      show up as "Batch" tags at all) explicitly excludes zero-quantity lines:</p>
+      <pre><span class="file">odoo/addons/stock/models/stock_move.py — _compute_lot_ids()</span>domain = [('move_id', 'in', self.ids), ('lot_id', '!=', False), ('quantity', '!=', 0.0)]</pre>
+      <p>Put the two together: the instant you select a batch on a Receipt, its move line gets created with
+      quantity forced to 0 by Harleys' override — and that same zero immediately makes it invisible to
+      <code class="inline">lot_ids</code>, since core excludes <code class="inline">quantity == 0</code> lines.
+      The batch you just picked appears to vanish. That is exactly "fetched and visible in the details popup,
+      but I can't select and add it" — it <em>is</em> being added, and then immediately hidden by a filter
+      it now fails.</p>
+      <p>This also explains "I had to recreate the record" — starting over sidesteps the specific state that
+      triggers this, without actually fixing the underlying conflict between the two rules.</p>
+    </div>
+
+    <div class="card open">
+      <span class="tag open">Decision needed, not yet made</span>
+      <p>Fixing this means picking one of two directions, and it's a real product decision, not just a code fix:</p>
+      <ul>
+        <li>Keep quantity forced to 0 on Receipts (preserve the manual-confirm GRN workflow), but make our
+        Batch/Batch Qty widget use <code class="inline">move_line_ids</code> directly as the row source for
+        Receipts specifically, instead of <code class="inline">lot_ids</code> — so a zero-quantity line still
+        shows a row (with an editable 0 waiting to be filled in), it just doesn't get silently dropped.</li>
+        <li>Or decide the zero-override shouldn't apply when a batch is added interactively through this new
+        UI at all (only when lines are created some other way) — a narrower, more surgical change.</li>
+      </ul>
+      <p>Not implemented yet — this is exactly the kind of thing to decide together before touching it.</p>
+    </div>
+  </section>
+
+  <section id="sales">
+    <h2><span class="num">6</span>Sales Deliveries — open question, not yet confirmed</h2>
+    <div class="card open">
+      <span class="tag open">Needs verification</span>
+      <p>The zero-quantity override found above is scoped specifically to
+      <code class="inline">self.picking_code == 'incoming'</code> — it does <strong>not</strong> apply to
+      outgoing (Delivery) pickings. So the exact mechanism that breaks batch selection on Receipts does not,
+      by itself, explain the same symptom on Deliveries if you're seeing it there too.</p>
+      <p>Worth confirming directly: on a Sales-generated Delivery Order, does selecting a batch also seem to
+      "vanish," the same as on a Receipt — or does it actually work there, and the Purchase side was the only
+      one with the problem? That answer determines whether Deliveries need separate investigation or are
+      already fine now that Batch/Batch Qty extend to outgoing pickings.</p>
+    </div>
+  </section>
+
+  <section id="built">
+    <h2><span class="num">7</span>What we built, and where it applies today</h2>
+    <table class="map">
+      <tr><th>Piece</th><th>Role</th><th>Picking-type aware?</th></tr>
+      <tr>
+        <td><code class="inline">stock_move_line_rows.js</code></td>
+        <td>Shared row computation (<code class="inline">getMoveLineRows</code>) — single source of truth for "what batches/quantities show, in what order." Both Batch and Batch Qty call this exact function.</td>
+        <td class="status-good">No — fully generic</td>
+      </tr>
+      <tr>
+        <td><code class="inline">stock_move_line_batch_field.js</code></td>
+        <td>Custom widget on <code class="inline">lot_ids</code>: search/add/remove/quick-create batches, built on the same CRUD building blocks <code class="inline">many2many_tags_field.js</code> itself uses.</td>
+        <td class="status-good">No — fully generic</td>
+      </tr>
+      <tr>
+        <td><code class="inline">stock_move_line_qty_editor.js</code></td>
+        <td>Custom widget on <code class="inline">move_line_ids</code>: editable per-batch quantity, writing directly to <code class="inline">stock.move.line.quantity</code>.</td>
+        <td class="status-good">No — fully generic</td>
+      </tr>
+      <tr>
+        <td><code class="inline">stock_picking_views.xml</code></td>
+        <td>All picking-type gating lives here (<code class="inline">column_invisible="... picking_type_code ..."</code>). Currently: Batch, Batch Qty, and the icon-only Details button apply to <code class="inline">internal</code>, <code class="inline">incoming</code>, and <code class="inline">outgoing</code>. Destination Location and Owner remain internal-only (a deliberate, separate decision, not yet revisited).</td>
+        <td class="status-warn">Yes — this is the only picking-type-aware layer</td>
+      </tr>
+    </table>
+    <p>The practical takeaway: the UI is now present on Receipts and Deliveries, but section 5 shows that
+    presence alone doesn't mean it behaves correctly there yet — the GRN zero-quantity override is a real,
+    separate obstacle the UI doesn't currently work around.</p>
+  </section>
+
+  <section id="map">
+    <h2><span class="num">8</span>Full process map at a glance</h2>
+    <div class="legend">
+      <span><i style="background:var(--good)"></i>Working as built</span>
+      <span><i style="background:var(--bad)"></i>Confirmed broken</span>
+      <span><i style="background:var(--warn)"></i>Needs a decision</span>
+      <span><i style="background:var(--accent2)"></i>Needs verification</span>
+    </div>
+    <table class="map">
+      <tr><th>Area</th><th>Picking type</th><th>Batch select/add</th><th>Batch Qty edit</th><th>Status</th></tr>
+      <tr><td>Indent → Internal Transfer</td><td>internal</td><td>Yes</td><td>Yes</td><td class="status-good">Working</td></tr>
+      <tr><td>Inventory → Internal Transfer</td><td>internal</td><td>Yes</td><td>Yes</td><td class="status-good">Working</td></tr>
+      <tr><td>Internal Transfer — sender leg</td><td>internal (from transit route)</td><td>Yes</td><td>Yes</td><td class="status-good">Working (same as above, no special-casing needed)</td></tr>
+      <tr><td>Internal Transfer — receiver leg</td><td>internal (from transit route)</td><td>Yes</td><td>Yes</td><td class="status-good">Working (same as above)</td></tr>
+      <tr><td>Purchase → Receipt (GRN)</td><td>incoming</td><td class="status-bad">Selects, then vanishes</td><td>N/A while row is hidden</td><td class="status-bad">Confirmed bug — section 5</td></tr>
+      <tr><td>Sales → Delivery</td><td>outgoing</td><td>Reported as broken, mechanism unconfirmed</td><td>Unconfirmed</td><td class="status-warn">Needs verification — section 6</td></tr>
+    </table>
+  </section>
+
+  <section id="next">
+    <h2><span class="num">9</span>Open questions / next steps</h2>
+    <div class="card">
+      <ol>
+        <li>Confirm whether Deliveries show the exact same "vanish after select" symptom as Receipts, or something different.</li>
+        <li>Decide the fix direction for the GRN zero-quantity conflict (row-source change vs. narrower override change) — section 5.</li>
+        <li>Decide whether Destination Location / Owner should extend to Receipts/Deliveries now that Batch/Batch Qty do (deferred earlier, still open).</li>
+        <li>Once both are decided, the actual code change is small and follows the exact same pattern already used throughout <code class="inline">stock_picking_views.xml</code> — no new architecture needed, same widgets, same shared row logic.</li>
+      </ol>
+    </div>
+  </section>
+
+  <footer>
+    Generated from direct source verification against <code class="inline">odoo_code/odoo/addons/stock</code>
+    and <code class="inline">odoo_harleys-main/harleys_customization</code>. Every code snippet above is quoted
+    from the actual file, not reconstructed from memory.
+  </footer>
+
+</div>
+</body>
+</html>

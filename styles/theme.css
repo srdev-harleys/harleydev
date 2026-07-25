@@ -1,0 +1,33 @@
+/* Semantic Theme Mapping — maps tokens.css to --primary/--bg/--text/etc. */
+:root {
+  /* Brand roles — sky blue is primary now; rose/blush are the secondary
+     two-tone accent + the pink "section" wash (Environment Info cards). */
+  --primary: var(--color-sky-700);
+  --primary-foreground: #000000; /* white-on-blue-700 measures ~3.9:1, fails AA — black clears 5:1+ */
+  --primary-700: var(--color-sky-900);
+  --secondary: var(--color-blush);
+  --accent: var(--color-sky);
+  --accent-2: var(--color-rose);
+  --accent-gold: var(--color-gold);
+  --accent-soft: rgba(43, 140, 163, 0.14);
+  --success: var(--color-mint);
+  --danger: var(--color-red);
+
+  /* Surfaces & text */
+  --bg: var(--color-bg);
+  --surface: rgba(255, 255, 255, 0.62);
+  --surface-blue: rgba(203, 235, 242, 0.34);
+  --surface-pink: rgba(245, 209, 216, 0.34);
+  --surface-solid: #ffffff;
+  --surface-border: var(--color-border);
+  --text: var(--color-fg);
+  --text-muted: var(--color-muted-fg);
+  --shadow: 0 10px 28px rgba(43, 140, 163, 0.14);
+  --shadow-hover: 0 18px 44px rgba(43, 140, 163, 0.22);
+
+  /* Typography (aliases so component files read naturally) */
+  --font-sans: var(--font-heading);
+
+  /* Layout */
+  --maxw: 1180px;
+}

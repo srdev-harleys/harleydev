@@ -1,0 +1,99 @@
+/* Headings, body text, code, tables, step numbers. */
+.eyebrow {
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--primary);
+  margin: 0 0 0.6rem;
+}
+h1 {
+  font-family: var(--sans);
+  font-size: 2rem;
+  font-weight: 800;
+  margin: 0 0 0.5rem;
+  letter-spacing: -0.01em;
+}
+.dek {
+  font-size: 1.08rem;
+  color: var(--ink-soft);
+  margin: 0 0 1rem;
+  max-width: 66ch;
+}
+h2 {
+  font-family: var(--sans);
+  font-size: 1.3rem;
+  font-weight: 800;
+  margin: 2.6rem 0 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--ink);
+  page-break-after: avoid;
+}
+h3 {
+  font-family: var(--sans);
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 1.8rem 0 0.6rem;
+  color: var(--ink);
+  page-break-after: avoid;
+}
+p { margin: 0 0 1rem; }
+ul, ol { margin: 0 0 1rem; padding-left: 1.4rem; }
+li { margin-bottom: 0.4rem; }
+code {
+  font-family: var(--mono);
+  font-size: 0.86em;
+  background: var(--paper-alt);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 0.05em 0.35em;
+  color: var(--primary);
+}
+pre {
+  background: #1b1330;
+  color: #e7ebee;
+  border-radius: 6px;
+  padding: 1rem 1.2rem;
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  line-height: 1.55;
+  margin: 1rem 0;
+}
+pre code { background: none; border: none; color: inherit; padding: 0; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--sans);
+  font-size: 0.9rem;
+  margin: 1rem 0 1.5rem;
+}
+th, td {
+  text-align: left;
+  padding: 0.55rem 0.7rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+thead th {
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  border-bottom: 2px solid var(--ink);
+}
+
+.step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem; height: 1.6rem;
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--paper);
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-right: 0.5rem;
+}

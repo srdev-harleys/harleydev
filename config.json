@@ -3,7 +3,7 @@
     "name": "Harleys Fine Baking ODOO DEV",
     "subtitle": "Internal Testing Environment",
     "description": "This portal provides secure access to the Harleys Fine Baking ODOO DEV testing environment. Only authorized users should access this system.",
-    "launchUrl": "https://8fvgvhc8-8069.inc1.devtunnels.ms/",
+    "launchUrl": "https://admin.taildfc619.ts.net/",
     "launchLabel": "Launch ODOO DEV",
     "environment": "Testing",
     "footer": {
@@ -16,7 +16,7 @@
   "applications": [
     {
       "name": "Harleys ODOO DEV Testing",
-      "url": "https://8fvgvhc8-8069.inc1.devtunnels.ms/",
+      "url": "https://admin.taildfc619.ts.net/",
       "icon": "erp",
       "status": "Online",
       "environment": "Testing",

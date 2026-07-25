@@ -1,0 +1,9 @@
+/* Print stylesheet — used when guides are saved/printed as PDF. */
+@media print {
+  body { background: #fff; }
+  .page { max-width: none; padding: 0; }
+  h2 { break-after: avoid; }
+  .shot { break-inside: avoid; }
+  a { color: inherit; text-decoration: none; }
+  .back-link, .lightbox { display: none !important; }
+}

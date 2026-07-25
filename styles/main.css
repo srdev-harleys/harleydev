@@ -1,0 +1,16 @@
+/* Landing Page Styles — entry point. Edit colors/fonts in tokens.css,
+   a single section's look in its own partial below. */
+@import url("tokens.css");     /* 1. Raw brand colors & fonts        */
+@import url("theme.css");      /* 2. Semantic tokens (light defaults) */
+@import url("base.css");       /* 3. Reset & base                    */
+@import url("background.css"); /* 4. Animated gradient + grid        */
+@import url("loader.css");     /* 5. Page loader & page transition   */
+@import url("topnav.css");     /* 6. Top navigation                  */
+@import url("hero.css");       /* 7. Hero section                    */
+@import url("buttons.css");    /* 8. Primary button (hover + ripple) */
+@import url("app-cards.css");  /* 9. Application cards               */
+@import url("info-cards.css"); /* 10. Information cards              */
+@import url("updates.css");    /* 11. Recent updates                 */
+@import url("footer.css");     /* 12. Footer                         */
+@import url("responsive.css"); /* 13. Mobile breakpoints             */
+@import url("accessibility.css"); /* 14. Reduced motion / focus      */
