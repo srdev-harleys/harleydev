@@ -20,7 +20,7 @@ async function init() {
   try {
     const config = await loadConfig();
     applyBrand(config.brand);
-    renderApplications(document.getElementById('apps-grid'), config.applications);
+    renderApplications(document.getElementById('apps-grid'), config.applications, config.brand?.launchUrl);
     renderInfoCards(document.getElementById('info-grid'), config.infoCards);
     renderUpdates(document.getElementById('updates-list'), config.recentUpdates);
   } catch (err) {

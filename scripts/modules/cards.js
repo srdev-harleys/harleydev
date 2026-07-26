@@ -4,8 +4,11 @@
 import { getIcon } from './icons.js';
 import { escapeHtml } from './dom-utils.js';
 
-/* Build application launcher cards from the "applications" array. */
-export function renderApplications(container, applications = []) {
+/* Build application launcher cards from the "applications" array.
+   An entry with no "url" of its own (e.g. the primary dev-environment
+   card) falls back to defaultUrl — config.json's brand.launchUrl — so
+   that link only ever needs to be written down once. */
+export function renderApplications(container, applications = [], defaultUrl = '#') {
   if (!container) return;
   container.innerHTML = '';
 
@@ -14,7 +17,7 @@ export function renderApplications(container, applications = []) {
     const isFeatured = !!app.featured;
     const card = document.createElement('a');
     card.className = 'app-card' + (isFeatured ? ' is-featured' : '');
-    card.href = app.url || '#';
+    card.href = app.url || defaultUrl;
     card.target = '_blank';
     card.rel = 'noopener noreferrer';
     card.setAttribute('role', 'listitem');
