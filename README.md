@@ -83,7 +83,7 @@ You only need to edit **`config.json`** — no HTML changes required.
   "applications": [
     {
       "name": "Harleys ODOO DEV Testing",
-      "url": "https://dbq7h82v-8069.inc1.devtunnels.ms/",
+      "url": "https://admin.taildfc619.ts.net/",
       "icon": "erp",
       "status": "Online",
       "environment": "Testing",
