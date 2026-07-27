@@ -9,13 +9,6 @@ export function applyBrand(brand = {}) {
   setText('hero-desc', brand.description);
   setText('env-badge', brand.environment || 'Testing');
 
-  const launchBtn = document.getElementById('launch-btn');
-  if (launchBtn && brand.launchUrl) launchBtn.href = brand.launchUrl;
-
-  // Top-nav quick links — same source of truth as the hero button and the
-  // Applications cards (config.json), so the URL only ever lives in one file.
-  const devLink = document.getElementById('dev-link');
-  if (devLink && brand.launchUrl) devLink.href = brand.launchUrl;
   const projectsLink = document.getElementById('projects-link');
   if (projectsLink && brand.projectsUrl) projectsLink.href = brand.projectsUrl;
 

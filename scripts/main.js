@@ -10,17 +10,32 @@ import { startClock } from './modules/clock.js';
 import { renderApplications, renderInfoCards } from './modules/cards.js';
 import { renderUpdates } from './modules/updates.js';
 import { applyBrand } from './modules/brand.js';
-import { attachRipple } from './modules/ripple.js';
+import { renderEnvNavLinks, renderHeroActions } from './modules/environments.js';
 
 async function init() {
   startClock();
-  attachRipple(document.getElementById('launch-btn'));
 
   const loader = document.getElementById('page-loader');
   try {
     const config = await loadConfig();
     applyBrand(config.brand);
-    renderApplications(document.getElementById('apps-grid'), config.applications, config.brand?.launchUrl);
+
+    const environments = config.brand?.environments || [];
+    renderEnvNavLinks(document.getElementById('env-links'), environments);
+    renderHeroActions(document.getElementById('hero-actions'), environments);
+
+    // Applications grid: one card per environment (UAT, Integration, Dev),
+    // in the same order as the hero/nav, followed by the rest of
+    // config.json's applications list (Projects Board, Documentation Hub).
+    const envCards = environments.map((env) => ({
+      name: env.name,
+      url: env.url,
+      icon: 'erp',
+      status: 'Online',
+      environment: env.environment,
+    }));
+    renderApplications(document.getElementById('apps-grid'), [...envCards, ...(config.applications || [])]);
+
     renderInfoCards(document.getElementById('info-grid'), config.infoCards);
     renderUpdates(document.getElementById('updates-list'), config.recentUpdates);
   } catch (err) {

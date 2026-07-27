@@ -1,4 +1,20 @@
 /* ==========================================================================
+   Hero Actions — one button per environment (Production/UAT/Integration/Dev)
+   ========================================================================== */
+.hero__actions {
+  margin-top: 34px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+}
+.hero__actions .btn-primary {
+  margin-top: 0;
+  padding: 13px 26px;
+  font-size: 0.95rem;
+}
+
+/* ==========================================================================
    Primary Button (hover + ripple)
    ========================================================================== */
 .btn-primary {

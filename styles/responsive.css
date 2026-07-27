@@ -1,6 +1,11 @@
 /* ==========================================================================
    Responsive (Mobile Optimized)
    ========================================================================== */
+@media (max-width: 1240px) {
+  .topnav { flex-wrap: wrap; row-gap: 8px; }
+  .topnav__nav { order: 3; width: 100%; justify-content: center; flex-wrap: wrap; }
+}
+
 @media (max-width: 640px) {
   .topnav { flex-wrap: wrap; row-gap: 8px; }
   .topnav__title { display: none; }
