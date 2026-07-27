@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Batch/Lot Tracking — Guide for Warehouse &amp; Operations Staff</title>
+<link rel="stylesheet" href="../assets/styles/main.css">
+</head>
+<body>
+<div class="page">
+
+  <a class="back-link" href="../index.html">&larr; Back to documentation home</a>
+
+  <header class="doc-head">
+    <p class="eyebrow">User Guide — Harleys Odoo 19 Enterprise</p>
+    <h1>Batch/Lot Tracking on Transfers, Receipts &amp; Deliveries</h1>
+    <p class="dek">Every Indent, Internal Transfer, Receipt (GRN) and Delivery now shows Batch, Batch Qty and Expiry Date on its line items. This guide explains what you'll see, where you can create a brand-new batch, and where you can only pick from what already exists.</p>
+    <div class="meta">
+      <span><b>Audience</b> Warehouse, purchasing, sales and inventory staff</span>
+      <span><b>Reading time</b> ~5 minutes</span>
+    </div>
+  </header>
+
+  <nav class="toc">
+    <b>Contents</b>
+    <ol>
+      <li><a href="#what">What you'll see on the Operations tab</a></li>
+      <li><a href="#receiving">Receiving goods: this is the only place to create a new batch</a></li>
+      <li><a href="#elsewhere">Internal Transfers &amp; Deliveries: pick from existing batches</a></li>
+      <li><a href="#everywhere">Once created, a batch is available everywhere</a></li>
+      <li><a href="#faq">Common questions</a></li>
+    </ol>
+  </nav>
+
+  <section id="what">
+    <h2>1. What you'll see on the Operations tab</h2>
+    <p>Whether you're working on an Indent Request's Internal Transfer, an Inventory internal transfer, a Purchase Receipt, or a Sales Delivery, the Operations tab shows the same three columns on each line item:</p>
+    <table>
+      <thead><tr><th>Column</th><th>What it means</th></tr></thead>
+      <tbody>
+        <tr><td><b>Batch</b></td><td>Which batch/lot number this line is drawn from. You can add, pick, or remove a batch here.</td></tr>
+        <tr><td><b>Batch Qty</b></td><td>How much of that batch is being moved. Type the number directly.</td></tr>
+        <tr><td><b>Expiry Date</b></td><td>The batch's expiry date, shown for reference (dd/MM/yy format).</td></tr>
+      </tbody>
+    </table>
+    <p>These columns only appear on the four document types above — you won't see them on other kinds of stock moves.</p>
+  </section>
+
+  <section id="receiving">
+    <h2>2. Receiving goods: this is the only place to create a new batch</h2>
+    <p>When you open a <b>Purchase Order's Receipt (GRN)</b> and click "Add" in the Batch column, you get a popover that does two things at once: it searches your typing against batches that already exist for that product, <i>and</i> it offers a "+ Create" option to mint a brand-new batch number.</p>
+
+    <h3><span class="step-num">1</span>Type a batch number to search or create</h3>
+    <figure class="shot">
+      <img src="screenshots/purchase_orders_create_new_batch.png" alt="Screenshot: Receipt line item, Batch popover showing an existing batch and a green + Create button">
+      <div class="placeholder">Screenshot: Batch popover on a Receipt, with an existing batch and a "+ Create" option</div>
+      <figcaption><b>purchase_orders_create_new_batch.png</b> — the popover shows any matching existing batch alongside a "+ Create" button, so you can reuse a batch number or start a new one from the same field.</figcaption>
+    </figure>
+
+    <h3><span class="step-num">2</span>See both matches and the create option together while typing</h3>
+    <figure class="shot">
+      <img src="screenshots/purchase_orders_select_if_batch_exists.png" alt="Screenshot: typing a partial batch number shows several matching existing batches plus a + Create button">
+      <div class="placeholder">Screenshot: typing shows live search results and the "+ Create" button side by side</div>
+      <figcaption><b>purchase_orders_select_if_batch_exists.png</b> — as you type, existing batches that match appear immediately, so you can double-check a batch doesn't already exist before creating a duplicate.</figcaption>
+    </figure>
+
+    <h3><span class="step-num">3</span>Set the expiry date when creating a new batch</h3>
+    <figure class="shot">
+      <img src="screenshots/purchase_orders_create_new_batch_select_exp_date.png" alt="Screenshot: expiry-date calendar widget, dates before today greyed out and unselectable">
+      <div class="placeholder">Screenshot: expiry-date calendar, past dates disabled</div>
+      <figcaption><b>purchase_orders_create_new_batch_select_exp_date.png</b> — if the product tracks expiry, you must pick a date here before the batch can be saved. Dates before today are greyed out, so a batch can never be backdated.</figcaption>
+    </figure>
+    <div class="callout">
+      <b>Why only here?</b>
+      Batches physically come into existence when goods are received, so the Receipt/GRN screen is the one place the system lets you create a new batch number. Every other screen only lets you draw down against batches that already exist.
+    </div>
+  </section>
+
+  <section id="elsewhere">
+    <h2>3. Internal Transfers &amp; Deliveries: pick from existing batches</h2>
+    <p>On an <b>Indent Request's Internal Transfer</b>, an <b>Inventory app Internal Transfer</b>, or a <b>Sales Delivery</b>, clicking "Add" in the Batch column opens a simple list of batches that already exist for that product — there's no "+ Create" option on these three flows.</p>
+
+    <h3><span class="step-num">1</span>Indent-originated Internal Transfer</h3>
+    <figure class="shot">
+      <img src="screenshots/indent_internal_transfers_receipt.png" alt="Screenshot: Internal Transfer from an Indent Request, Add batch dropdown listing only existing batches">
+      <div class="placeholder">Screenshot: Add batch dropdown on an Indent-originated Internal Transfer, existing batches only</div>
+      <figcaption><b>indent_internal_transfers_receipt.png</b> — the dropdown lists batches you can pick from; there's nothing to create here.</figcaption>
+    </figure>
+
+    <h3><span class="step-num">2</span>The same record, from the Inventory app</h3>
+    <figure class="shot">
+      <img src="screenshots/inventory_internal_transfers.png" alt="Screenshot: the same Internal Transfer opened from the Inventory app, same select-only behavior">
+      <div class="placeholder">Screenshot: the same transfer opened from Inventory → Internal Transfers</div>
+      <figcaption><b>inventory_internal_transfers.png</b> — whether you got here from an Indent Request or straight from the Inventory app, it's the exact same screen and behaves identically.</figcaption>
+    </figure>
+
+    <h3><span class="step-num">3</span>Sales Delivery</h3>
+    <figure class="shot">
+      <img src="screenshots/sales_order_delivery.png" alt="Screenshot: Sales Delivery Add batch dropdown for a product, listing existing batches, several marked Expired">
+      <div class="placeholder">Screenshot: Add batch dropdown on a Sales Delivery, some batches marked Expired</div>
+      <figcaption><b>sales_order_delivery.png</b> — same select-only behavior on a Delivery. Note that batches marked "Expired" still appear in this list and can still be selected — the system doesn't currently hide or block them, so it's worth checking the expiry date yourself before picking one.</figcaption>
+    </figure>
+  </section>
+
+  <section id="everywhere">
+    <h2>4. Once created, a batch is available everywhere</h2>
+    <p>A batch created on a Receipt isn't tied to that one document — the moment it's saved, it's available to pick from on any Internal Transfer or Delivery for that same product, anywhere in the company. You don't need to do anything extra to "make it available" elsewhere; it just is.</p>
+    <div class="callout warn">
+      <b>Not scoped to a warehouse</b>
+      A batch created while receiving goods at one location currently shows up in the picker at every other location too, for the same product. If you're moving stock between warehouses, double-check the batch you pick is actually the physical stock you have in front of you.
+    </div>
+  </section>
+
+  <section id="faq">
+    <h2>5. Common questions</h2>
+    <div class="callout warn">
+      <b>Why can't I create a new batch on this Internal Transfer / Delivery?</b>
+      By design — new batches are only ever created where goods are physically received, on a Purchase Receipt (GRN). Everywhere else, you're drawing down against batches that already exist.
+    </div>
+    <div class="callout warn">
+      <b>Can I still pick an expired batch?</b>
+      Yes, today the system doesn't stop you — expired batches still appear in the picker (see §3). Treat the expiry date shown as information to check yourself before selecting one.
+    </div>
+    <div class="callout warn">
+      <b>Can anyone edit a batch's details after it's created?</b>
+      Right now, yes — there's no extra permission gate on editing an existing batch's own details (like its expiry date) beyond normal access to the record. A tighter "only a manager can change batch details" rule is a planned change, not yet built.
+    </div>
+    <div class="callout warn">
+      <b>Who can add or remove a batch from a line item?</b>
+      Anyone with ordinary access to Lots &amp; Serial Numbers can add or delete a batch row, on any of the four document types, as long as the document isn't already locked/done.
+    </div>
+  </section>
+
+  <footer>
+    User guide — Harleys Odoo 19 Enterprise. For the technical implementation reference, see the <a href="developer-guide.html">Developer Guide</a>.
+  </footer>
+
+</div>
+<script type="module" src="../assets/scripts/main.js"></script>
+</body>
+</html>

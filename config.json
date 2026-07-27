@@ -57,6 +57,13 @@
   ],
   "recentUpdates": [
     {
+      "date": "2026-07-27",
+      "title": "Batch/Lot Tracking guides published for Indent, Inventory, Purchase & Sales",
+      "description": "New User Guide and Developer Guide covering the Batch, Batch Qty and Expiry Date columns on the Operations grid — where a batch can be created versus only selected, and how it becomes available company-wide once created.",
+      "link": "docs/index.html",
+      "linkLabel": "Browse the docs"
+    },
+    {
       "date": "2026-07-23",
       "title": "Employee Attribution guides expanded with per-model change & deletion logging",
       "description": "The Employee Attribution documentation now covers opt-in deeper logging for individual models — including deletions — with a full admin configuration walkthrough for IT.",

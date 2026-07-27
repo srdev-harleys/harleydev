@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Batch/Lot Tracking on the Operations Grid — Implementation Reference</title>
+<link rel="stylesheet" href="../assets/styles/main.css">
+</head>
+<body>
+<div class="page">
+
+  <a class="back-link" href="../index.html">&larr; Back to documentation home</a>
+
+  <header class="doc-head">
+    <p class="eyebrow">Implementation Reference — Harleys Odoo 19 Enterprise</p>
+    <h1>Batch/Lot Tracking on the Operations Grid</h1>
+    <p class="dek">How Batch, Batch Qty and Expiry Date work on the Inventory Operations grid across Indent, Inventory, Purchase and Sales — one shared screen, four business flows, and only one place a brand-new batch is ever minted.</p>
+    <div class="meta">
+      <span><b>Module</b> harleys_customization (view + JS/SCSS only)</span>
+      <span><b>Status</b> Working; §7 governance requirement not yet built</span>
+      <span><b>Scope</b> stock.picking / stock.move / stock.move.line / stock.lot</span>
+    </div>
+  </header>
+
+  <nav class="toc">
+    <b>Contents</b>
+    <ol>
+      <li><a href="#overview">One screen, four business flows</a></li>
+      <li><a href="#columns">The three Batch columns</a></li>
+      <li><a href="#create-vs-select">Where batches can be created vs only selected</a></li>
+      <li><a href="#universality">Universality — a batch created once is visible everywhere</a></li>
+      <li><a href="#unrestricted">Line-item batch add/delete — currently unrestricted</a></li>
+      <li><a href="#governance">Not yet built: "only a higher official can change batch details"</a></li>
+      <li><a href="#files">Module reference</a></li>
+      <li><a href="#tradeoffs">Known trade-offs / open items</a></li>
+    </ol>
+  </nav>
+
+  <section id="overview">
+    <h2>1. One screen, four business flows</h2>
+    <p>Indent, Inventory, Purchase and Sales don't have four separate Operations screens — they all render through the <i>same</i> Odoo form, <code>stock.view_picking_form</code>, extended once by <code>harleys_customization/views/stock_picking_views.xml</code> (<code>view_picking_form_custom</code>). That inherited view isn't scoped to any specific action or menu, so every picking gets the same Operations-tab extensions regardless of how it was created. The four flows only diverge at the <i>field</i> level, via <code>picking_type_code</code> on <code>stock.picking</code> (<code>picking_code</code> — the same thing — related onto <code>stock.move</code>):</p>
+    <table>
+      <thead><tr><th>Business flow</th><th>picking_type_code</th><th>Entry point</th></tr></thead>
+      <tbody>
+        <tr><td>Indent Request → Internal Transfer</td><td><code>internal</code></td><td>Indent Request form → "Internal Transfer"</td></tr>
+        <tr><td>Inventory → Internal Transfer</td><td><code>internal</code></td><td>Inventory app → Internal Transfers</td></tr>
+        <tr><td>Purchase → Receipt (GRN)</td><td><code>incoming</code></td><td>Purchase Order → Receipt</td></tr>
+        <tr><td>Sales → Delivery</td><td><code>outgoing</code></td><td>Sales Order → Delivery</td></tr>
+      </tbody>
+    </table>
+    <div class="callout warn">
+      <b>Indent and Inventory are literally indistinguishable by <code>picking_type_code</code></b>
+      Both are <code>internal</code>. The only way to tell them apart in the data is whether a <code>stock.picking</code> is linked from an <code>indent.request</code> record — the Operations grid itself treats them identically, as the two screenshots below show for the exact same underlying record.
+    </div>
+
+    <h3><span class="step-num">1</span>Indent Request → Internal Transfer</h3>
+    <figure class="shot">
+      <img src="screenshots/indent_internal_transfers_receipt.png" alt="Screenshot: Indent Request internal transfer HYD-CS/TRANSHYDCS/01267, Operations tab, Add batch dropdown open with a select-only list of existing batches">
+      <div class="placeholder">Screenshot: Indent-originated Internal Transfer, Operations tab, "Add batch" dropdown open</div>
+      <figcaption><b>indent_internal_transfers_receipt.png</b> — <code>HYD-CS/TRANSHYDCS/01267</code>. The "Add batch…" dropdown lists only existing batches (100SZ06, 20000453, 333250426, 342, 360, …) plus "Search more…" — no create option, because this is an <code>internal</code> picking.</figcaption>
+    </figure>
+
+    <h3><span class="step-num">2</span>The same record, opened from Inventory → Internal Transfers</h3>
+    <figure class="shot">
+      <img src="screenshots/inventory_internal_transfers.png" alt="Screenshot: the same picking opened from the Inventory app's Internal Transfers list, identical Add batch dropdown behavior">
+      <div class="placeholder">Screenshot: same picking, opened from Inventory → Internal Transfers</div>
+      <figcaption><b>inventory_internal_transfers.png</b> — same picking record as above, reached through a completely different menu. The Operations grid and its Batch dropdown behave identically either way, because both are the same <code>internal</code> picking type underneath.</figcaption>
+    </figure>
+  </section>
+
+  <section id="columns">
+    <h2>2. The three Batch columns</h2>
+    <table>
+      <thead><tr><th>Column</th><th>Field</th><th>Widget</th><th>Editable?</th></tr></thead>
+      <tbody>
+        <tr><td>Batch</td><td><code>lot_ids</code></td><td><code>stock_move_line_batch</code></td><td>Add/select/delete</td></tr>
+        <tr><td>Batch Qty</td><td><code>move_line_ids</code> (<code>quantity</code>)</td><td><code>stock_move_line_row_field</code>, <code>options="{'row_field': 'quantity', 'editable': True}"</code></td><td>Yes, numeric input</td></tr>
+        <tr><td>Expiry Date</td><td><code>move_line_ids</code> (<code>expiration_date</code>)</td><td><code>stock_move_line_row_field</code>, <code>options="{'row_field': 'expiration_date', 'date_format': 'dd/MM/yy'}"</code></td><td>Read-only, <code>dd/MM/yy</code></td></tr>
+      </tbody>
+    </table>
+    <p>All three are <code>column_invisible</code> unless <code>picking_type_code</code> is one of <code>internal</code> / <code>incoming</code> / <code>outgoing</code> — specific to these four flows and absent from any other picking type Harleys might use.</p>
+    <p>All three read from one shared row list — <code>getMoveLineRows()</code> in <code>static/src/js/stock_move_line_rows.js</code> — built primarily off <code>lot_ids.records</code>, with a fallback for Receipt lines whose quantity is still 0 (Harleys forces new GRN lines to <code>quantity = 0</code>, which would otherwise make core's own <code>_compute_lot_ids</code> hide the row before the user can type a quantity). Because all three columns share this one function, adding or deleting a batch in one column is reflected in the other two with no separate bookkeeping.</p>
+  </section>
+
+  <section id="create-vs-select">
+    <h2>3. Where batches can be created vs only selected</h2>
+    <p>This is the key difference between the four flows:</p>
+    <ul>
+      <li><b>Purchase GRN (<code>incoming</code>) only</b> — clicking "Add" opens a dedicated popover (<code>StockMoveLineBatchQuickCreate</code>): live search against existing <code>stock.lot</code> records for the current product, and the ability to type a brand-new batch number. If the product tracks expiry, an expiry date is mandatory, entered via Odoo's own calendar widget locked to <code>dd/MM/yy</code> and unable to be backdated. <b>This is the only place in the system a new batch/lot record is minted through this grid.</b></li>
+      <li><b>Indent/Inventory internal transfer and Sales delivery (<code>internal</code>, <code>outgoing</code>)</b> — clicking "Add" opens a plain inline autocomplete (<code>Many2XAutocomplete</code>), domain-filtered to the line's own product (<code>domain="[('product_id','=',product_id)]"</code>). Select-only in practice: there's no dedicated "new batch" UI here the way the Receipt popover has one. (The underlying widget still technically supports create-by-typing if <code>use_create_lots</code> is on for that picking type and the view's <code>options="{'create': [...]}"</code> allows it — that's bare Odoo default behavior inherited from <code>Many2XAutocomplete</code>, not a designed create flow, and isn't how these three flows are meant to be used.)</li>
+    </ul>
+    <p>This matches how the business actually works: batches physically originate at goods receipt, so GRN is the only point that should mint new ones — the other three flows just draw down against what already exists.</p>
+
+    <h3><span class="step-num">1</span>Receipt — an existing batch, with a "+ Create" option alongside it</h3>
+    <figure class="shot">
+      <img src="screenshots/purchase_orders_create_new_batch.png" alt="Screenshot: Purchase Order Receipt HYD-CS/IN/00526, product AMUL CHEESE BLOCK, Batch popover showing one existing batch and a green + Create button">
+      <div class="placeholder">Screenshot: Receipt HYD-CS/IN/00526, Batch popover with an existing batch and a "+ Create" button</div>
+      <figcaption><b>purchase_orders_create_new_batch.png</b> — <code>HYD-CS/IN/00526</code>, product <b>AMUL CHEESE BLOCK</b>. The popover lists existing batch 3214 (dated 31/07/26) <i>and</i> a "+ Create" button — the option that doesn't exist on the other three flows.</figcaption>
+    </figure>
+
+    <h3><span class="step-num">2</span>Receipt — expiry date is mandatory, no backdating</h3>
+    <figure class="shot">
+      <img src="screenshots/purchase_orders_create_new_batch_select_exp_date.png" alt="Screenshot: same Receipt, expiry-date calendar widget open on July 2026, dates before the 27th greyed out and disabled, the 31st selected">
+      <div class="placeholder">Screenshot: expiry-date calendar widget, dates before today disabled</div>
+      <figcaption><b>purchase_orders_create_new_batch_select_exp_date.png</b> — same Receipt. The calendar widget is locked to <code>DD/MM/YY</code> and every date before today (the 27th) is greyed out and unselectable, so a new batch's expiry can never be backdated.</figcaption>
+    </figure>
+
+    <h3><span class="step-num">3</span>Receipt — live search and create share the same popover</h3>
+    <figure class="shot">
+      <img src="screenshots/purchase_orders_select_if_batch_exists.png" alt="Screenshot: same Receipt, typing 3 in the Batch field showing live-search results plus a + Create button">
+      <div class="placeholder">Screenshot: typing into the Batch field shows live-search matches and a "+ Create" option together</div>
+      <figcaption><b>purchase_orders_select_if_batch_exists.png</b> — typing "3" surfaces matching existing batches (30003421, BAF031, BAF1311, BAF1361, July1359) in the same popover as the "+ Create" button, so a receiving clerk can pick an existing batch or mint a new one from one field, without switching screens.</figcaption>
+    </figure>
+
+    <h3><span class="step-num">4</span>Delivery — select-only, same as the internal flows</h3>
+    <figure class="shot">
+      <img src="screenshots/sales_order_delivery.png" alt="Screenshot: Sales Order Delivery HYD-CS/OUT/00126, Add batch dropdown for a chocolate tray product listing several existing batches all marked Expired, no create option">
+      <div class="placeholder">Screenshot: Delivery HYD-CS/OUT/00126, "Add batch" dropdown, no create option</div>
+      <figcaption><b>sales_order_delivery.png</b> — <code>HYD-CS/OUT/00126</code>, product <b>BELGIUM CHOCOLATE MEDOVIK TRAY 3KG</b>. Like the two internal-transfer screenshots in §1, the dropdown only lists existing batches — no "+ Create" here, confirming Delivery is select-only exactly like Indent/Inventory. Note that every batch listed for this product is marked "Expired" and all remain selectable from this dropdown; nothing in the current view filters expired batches out.</figcaption>
+    </figure>
+  </section>
+
+  <section id="universality">
+    <h2>4. Universality — a batch created once is visible everywhere</h2>
+    <p><code>stock.lot</code> is master data, not scoped to the picking that created it. The moment a batch is created on a GRN receipt, it's a normal <code>stock.lot</code> row (scoped only by <code>product_id</code> / <code>company_id</code>) and is immediately selectable from the same product-filtered dropdown on any other picking — internal transfer or delivery — for that product, company-wide. No extra work was needed for this; it falls directly out of <code>stock.lot</code> already being one shared model.</p>
+    <div class="callout warn">
+      <b>No warehouse/location scoping on the lot record itself</b>
+      Availability <i>by location</i> is a separate concern, tracked on <code>stock.quant</code>, not gated on the lot. A batch created at one warehouse is, today, selectable from the Batch dropdown at any other warehouse for the same product — see §8.
+    </div>
+  </section>
+
+  <section id="unrestricted">
+    <h2>5. Line-item batch add/delete — currently unrestricted</h2>
+    <p>On all four flows, any user who can see the picking and has Odoo's own <code>stock.group_production_lot</code> (the base "Lots &amp; Serial Numbers" feature toggle — a feature switch, not a rank/hierarchy group) can freely add or delete Batch rows on any line item (<code>deleteLot()</code> / <code>deleteLine()</code> in <code>stock_move_line_batch_field.js</code>). The only other gate is the standard <code>is_locked</code> / <code>state</code> check already on the whole Operations tab — batch add/delete disappears once a picking is done and locked, same as the rest of the grid. There is no separate, tighter permission for this action.</p>
+  </section>
+
+  <section id="governance">
+    <h2>6. Not yet built: "only a higher official can change batch details"</h2>
+    <div class="callout warn">
+      <b>Stated requirement, not current behavior</b>
+      Flagging this clearly so it isn't documented as already-shipped. Checked directly against the code (<code>security/ir.model.access.csv</code>, <code>security/security_group.xml</code>): there is no ACL or <code>ir.rule</code> on <code>stock.lot</code> in this module at all.
+    </div>
+    <p>Concretely, today:</p>
+    <ul>
+      <li>Editing an <i>existing</i> batch's own fields (name, expiration date, etc.) — via core's "Details" popup (<code>action_show_details</code> on <code>stock.move</code>, core Odoo) or the standalone Inventory → Products → Lots/Serial Numbers list — is open to anyone who can see the picking or that menu. No extra permission check exists beyond ordinary <code>stock.lot</code> access.</li>
+      <li>There's already a precedent pattern in this same module for exactly this kind of split, just not wired to batches: <code>group_indent_admin</code> / <code>group_indent_user</code> (<code>res.groups.privilege</code> "Indent Request", <code>security/security_group.xml</code>), paired with <code>ir.rule</code> domain restrictions (e.g. <code>indent_request_rule</code> scoping non-admins to <code>requested_by = user.id</code>, <code>indent_request_manager_rule</code> giving the admin group unrestricted access). That's the established "user can touch their own records, admin/manager can touch everything" template in this codebase — the natural one to extend for batch-detail editing, as an alternative to reusing core's existing <code>stock.group_stock_manager</code> if "higher official" is meant to map to Inventory Manager specifically rather than a new bespoke group.</li>
+    </ul>
+    <p>Before this can be built, needs a decision on: which group/role counts as the "higher official" (existing <code>stock.group_stock_manager</code>? a new group? something per picking type / department?), and exactly what "change batch details" covers — editing the <code>stock.lot</code> record's own fields after creation, versus something else like reassigning which lot a saved move line points to. Line-item add/select/delete (§5) is explicitly <i>not</i> meant to be restricted by this — only editing a batch's own details after it exists.</p>
+  </section>
+
+  <section id="files">
+    <h2>7. Module reference — <code>harleys_customization</code></h2>
+    <table>
+      <thead><tr><th>File</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><code>views/stock_picking_views.xml</code></td><td>Adds the three columns to <code>stock.view_picking_form</code>'s Operations tab; all <code>picking_type_code</code>-gated.</td></tr>
+        <tr><td><code>static/src/js/stock_move_line_rows.js</code></td><td>Shared row list (<code>getMoveLineRows</code>) all three columns read from.</td></tr>
+        <tr><td><code>static/src/js/stock_move_line_batch_field.js</code> / <code>.xml</code></td><td>Batch column: tags, delete, dispatches to inline dropdown (internal/outgoing) or popover (incoming).</td></tr>
+        <tr><td><code>static/src/js/stock_move_line_batch_quickcreate.js</code> / <code>.xml</code></td><td>Receipt-only "Add Batch" popover: live search + new-batch + expiry entry.</td></tr>
+        <tr><td><code>static/src/js/stock_move_line_row_field.js</code> / <code>.xml</code></td><td>Shared, parametrized widget powering both Batch Qty and Expiry Date columns.</td></tr>
+        <tr><td><code>static/src/js/searchable_x2many.js</code></td><td>Operations grid list renderer; also where the new-line auto-save (§8) lives.</td></tr>
+        <tr><td><code>static/src/scss/stock_picking_operations.scss</code></td><td>All styling for the above.</td></tr>
+      </tbody>
+    </table>
+    <p>No new Python model was added for this feature — it's view + JS/SCSS only, layered on top of Odoo's core <code>stock.picking</code> / <code>stock.move</code> / <code>stock.lot</code>.</p>
+  </section>
+
+  <section id="tradeoffs">
+    <h2>8. Known trade-offs / open items</h2>
+    <ul>
+      <li><b>Demand quantity (Initial Demand) goes read-only shortly after a new line is added.</b> Side effect of auto-saving the picking as soon as a product is selected (needed so Batch/Batch Qty/Expiry become usable on that row at all) combined with core Odoo's own <code>_autoconfirm_picking()</code> / <code>is_initial_demand_editable</code> logic, which locks Demand once a move leaves <code>draft</code> state on an <code>is_locked</code> picking. Root-caused but not yet resolved; the options on the table are (a) scope an override to just-added (<code>additional = True</code>) lines specifically, (b) move the auto-save trigger back to "leaving the row" instead of "product selected," or (c) unlock the whole picking (not recommended — that also reopens Scheduled Date editing picking-wide, wider than intended).</li>
+      <li><b>No warehouse/location scoping on batches</b> (§4) — a batch created on one GRN is selectable everywhere, company-wide, today. Unbuilt if the business actually wants batches scoped per warehouse/store.</li>
+      <li><b>"Higher official" governance (§6) is unbuilt</b> — line-item add/select/delete works for anyone today; editing an existing batch's own details has no extra gate yet.</li>
+    </ul>
+  </section>
+
+  <footer>
+    Internal implementation reference — Harleys Odoo 19 Enterprise. Click any screenshot to view it enlarged and step through the rest. Looking for a non-technical walkthrough instead? See the <a href="user-guide.html">User Guide</a>.
+  </footer>
+
+</div>
+<script type="module" src="../assets/scripts/main.js"></script>
+</body>
+</html>

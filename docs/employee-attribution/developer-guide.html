@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Shared Login &amp; Employee Attribution — Implementation Reference</title>
-<link rel="stylesheet" href="assets/styles/main.css">
+<link rel="stylesheet" href="../assets/styles/main.css">
 </head>
 <body>
 <div class="page">
 
-  <a class="back-link" href="index.html">&larr; Back to documentation home</a>
+  <a class="back-link" href="../index.html">&larr; Back to documentation home</a>
 
   <header class="doc-head">
     <p class="eyebrow">Implementation Reference — Harleys Odoo 19 Enterprise</p>
@@ -143,35 +143,35 @@
 
     <h3><span class="step-num">1</span>Open Settings</h3>
     <figure class="shot">
-      <img src="screenshots/employee_attribution_docs/select-setting.png" alt="Screenshot: Apps home screen, about to open the Settings app">
+      <img src="screenshots/select-setting.png" alt="Screenshot: Apps home screen, about to open the Settings app">
       <div class="placeholder">Screenshot: Apps home screen, about to open the Settings app</div>
       <figcaption><b>select-setting.png</b></figcaption>
     </figure>
 
     <h3><span class="step-num">2</span>Switch to the Technical tab</h3>
     <figure class="shot">
-      <img src="screenshots/employee_attribution_docs/go_to_technical_tab.png" alt="Screenshot: Settings, Technical tab open, showing the Discuss / Activities / Email menu groups">
+      <img src="screenshots/go_to_technical_tab.png" alt="Screenshot: Settings, Technical tab open, showing the Discuss / Activities / Email menu groups">
       <div class="placeholder">Screenshot: Settings, Technical tab open</div>
       <figcaption><b>go_to_technical_tab.png</b> — note the new <b>Employee Attribution Log</b> entry already in the top menu bar (§6).</figcaption>
     </figure>
 
     <h3><span class="step-num">3</span>Open Models under Database Structure</h3>
     <figure class="shot">
-      <img src="screenshots/employee_attribution_docs/select_models.png" alt="Screenshot: Technical menu scrolled to Database Structure, Models highlighted">
+      <img src="screenshots/select_models.png" alt="Screenshot: Technical menu scrolled to Database Structure, Models highlighted">
       <div class="placeholder">Screenshot: Technical menu scrolled to Database Structure, Models highlighted</div>
       <figcaption><b>select_models.png</b></figcaption>
     </figure>
 
     <h3><span class="step-num">4</span>Bulk-enable across every model, or just the ones you pick</h3>
     <figure class="shot">
-      <img src="screenshots/employee_attribution_docs/selectall_models_and_enable_employee_attribution.png" alt="Screenshot: Models list, every row selected, Actions menu open with Enable Employee Attribution highlighted">
+      <img src="screenshots/selectall_models_and_enable_employee_attribution.png" alt="Screenshot: Models list, every row selected, Actions menu open with Enable Employee Attribution highlighted">
       <div class="placeholder">Screenshot: Models list, every row selected, Actions menu open with Enable Employee Attribution highlighted</div>
       <figcaption><b>selectall_models_and_enable_employee_attribution.png</b> — select the rows to configure (here, every model in the registry) → <b>Actions → Enable Employee Attribution</b>. Incompatible rows are skipped automatically.</figcaption>
     </figure>
 
     <h3><span class="step-num">5</span>Fine-tune a single model by hand</h3>
     <figure class="shot">
-      <img src="screenshots/employee_attribution_docs/individual_model_employeeattribution.png" alt="Screenshot: Indent Request model record, Employee Attribution tab, Log Every Change and Log Deletions checked, Attribution Parent Field empty">
+      <img src="screenshots/individual_model_employeeattribution.png" alt="Screenshot: Indent Request model record, Employee Attribution tab, Log Every Change and Log Deletions checked, Attribution Parent Field empty">
       <div class="placeholder">Screenshot: Indent Request model record, Employee Attribution tab</div>
       <figcaption><b>individual_model_employeeattribution.png</b> — the same three fields from the table above, on a single model's record. Indent Request is a top-level document, so its parent field is correctly left blank.</figcaption>
     </figure>
@@ -216,84 +216,84 @@
 
     <h3><span class="step-num">1</span>Confirm the account before setup</h3>
     <figure class="shot">
-      <img src="screenshots/employee_attribution_docs/apps-launcher.png" alt="Screenshot: Odoo Apps launcher, full application grid">
+      <img src="screenshots/apps-launcher.png" alt="Screenshot: Odoo Apps launcher, full application grid">
       <div class="placeholder">Screenshot: Odoo Apps launcher, full application grid</div>
       <figcaption><b>apps-launcher.png</b> — the standard Odoo home screen, for reference / orientation.</figcaption>
     </figure>
 
     <h3><span class="step-num">2</span>Locate the account in Settings</h3>
     <figure class="shot">
-      <img src="screenshots/employee_attribution_docs/settings-general.png" alt="Screenshot: Settings → General Settings, active user count">
+      <img src="screenshots/settings-general.png" alt="Screenshot: Settings → General Settings, active user count">
       <div class="placeholder">Screenshot: Settings → General Settings, active user count</div>
       <figcaption><b>settings-general.png</b> — confirms the licensed-user baseline this feature works within.</figcaption>
     </figure>
     <figure class="shot">
-      <img src="screenshots/employee_attribution_docs/settings-users-menu.png" alt="Screenshot: Settings → Users &amp;amp; Companies menu">
+      <img src="screenshots/settings-users-menu.png" alt="Screenshot: Settings → Users &amp;amp; Companies menu">
       <div class="placeholder">Screenshot: Settings → Users &amp; Companies menu</div>
       <figcaption><b>settings-users-menu.png</b></figcaption>
     </figure>
     <figure class="shot">
-      <img src="screenshots/employee_attribution_docs/users-list-planner.png" alt="Screenshot: Users list filtered to &quot;planner&quot; — Supply Chain Planner / planner@harleys.com">
+      <img src="screenshots/users-list-planner.png" alt="Screenshot: Users list filtered to &quot;planner&quot; — Supply Chain Planner / planner@harleys.com">
       <div class="placeholder">Screenshot: Users list filtered to "planner" — Supply Chain Planner / planner@harleys.com</div>
       <figcaption><b>users-list-planner.png</b></figcaption>
     </figure>
 
     <h3><span class="step-num">3</span>Mark the account as shared and authorize employees</h3>
     <figure class="shot">
-      <img src="screenshots/employee_attribution_docs/shared-login-tab-off.png" alt="Screenshot: User form, new &quot;Shared Login&quot; tab, unchecked">
+      <img src="screenshots/shared-login-tab-off.png" alt="Screenshot: User form, new &quot;Shared Login&quot; tab, unchecked">
       <div class="placeholder">Screenshot: User form, new "Shared Login" tab, unchecked</div>
       <figcaption><b>shared-login-tab-off.png</b></figcaption>
     </figure>
     <figure class="shot">
-      <img src="screenshots/employee_attribution_docs/shared-login-tab-on.png" alt="Screenshot: &quot;Shared / Functional Login&quot; checked; Authorized Employees field visible">
+      <img src="screenshots/shared-login-tab-on.png" alt="Screenshot: &quot;Shared / Functional Login&quot; checked; Authorized Employees field visible">
       <div class="placeholder">Screenshot: "Shared / Functional Login" checked; Authorized Employees field visible</div>
       <figcaption><b>shared-login-tab-on.png</b></figcaption>
     </figure>
     <figure class="shot">
-      <img src="screenshots/employee_attribution_docs/authorized-employees-search-1.png" alt="Screenshot: Authorized Employees search — typing &quot;vinee&quot; → Komatireddy Vineeth Reddy">
+      <img src="screenshots/authorized-employees-search-1.png" alt="Screenshot: Authorized Employees search — typing &quot;vinee&quot; → Komatireddy Vineeth Reddy">
       <div class="placeholder">Screenshot: Authorized Employees search — typing "vinee" → Komatireddy Vineeth Reddy</div>
       <figcaption><b>authorized-employees-search-1.png</b></figcaption>
     </figure>
     <figure class="shot">
-      <img src="screenshots/employee_attribution_docs/authorized-employees-search-2.png" alt="Screenshot: Authorized Employees search — typing &quot;bharg&quot; → Kalepu Anjani Bhargav Kumar, Merugu Sai Bhargav">
+      <img src="screenshots/authorized-employees-search-2.png" alt="Screenshot: Authorized Employees search — typing &quot;bharg&quot; → Kalepu Anjani Bhargav Kumar, Merugu Sai Bhargav">
       <div class="placeholder">Screenshot: Authorized Employees search — typing "bharg" → Kalepu Anjani Bhargav Kumar, Merugu Sai Bhargav</div>
       <figcaption><b>authorized-employees-search-2.png</b></figcaption>
     </figure>
     <figure class="shot">
-      <img src="screenshots/employee_attribution_docs/authorized-employees-saved.png" alt="Screenshot: Both employees added and saved on the Shared Login tab">
+      <img src="screenshots/authorized-employees-saved.png" alt="Screenshot: Both employees added and saved on the Shared Login tab">
       <div class="placeholder">Screenshot: Both employees added and saved on the Shared Login tab</div>
       <figcaption><b>authorized-employees-saved.png</b> — Komatireddy Vineeth Reddy and Kalepu Anjani Bhargav Kumar are now the only two employees permitted to bind their identity to this account.</figcaption>
     </figure>
 
     <h3><span class="step-num">4</span>First employee logs in through the shared account</h3>
     <figure class="shot">
-      <img src="screenshots/employee_attribution_docs/login-planner.png" alt="Screenshot: standard Odoo login screen, planner@harleys.com credentials entered">
+      <img src="screenshots/login-planner.png" alt="Screenshot: standard Odoo login screen, planner@harleys.com credentials entered">
       <div class="placeholder">Screenshot: standard Odoo login screen, planner@harleys.com credentials entered</div>
       <figcaption><b>login-planner.png</b></figcaption>
     </figure>
     <figure class="shot">
-      <img src="screenshots/employee_attribution_docs/confirm-identity-employee-1.png" alt="Screenshot: &quot;Confirm your identity&quot; page — Employee Login: kvineethreddy.cv@gmail.com">
+      <img src="screenshots/confirm-identity-employee-1.png" alt="Screenshot: &quot;Confirm your identity&quot; page — Employee Login: kvineethreddy.cv@gmail.com">
       <div class="placeholder">Screenshot: "Confirm your identity" page — Employee Login: kvineethreddy.cv@gmail.com</div>
       <figcaption><b>confirm-identity-employee-1.png</b> — the custom second step, only shown because this account is flagged shared.</figcaption>
     </figure>
 
     <h3><span class="step-num">5</span>Create an Indent Request and check the chatter</h3>
     <figure class="shot">
-      <img src="screenshots/employee_attribution_docs/indent-created-tagged.png" alt="Screenshot: Indent Request IND08781 (Draft) — chatter shows &quot;Indent Request created&quot; tagged &quot;Logged by KOMATIREDDY VINEETH REDDY&quot;">
+      <img src="screenshots/indent-created-tagged.png" alt="Screenshot: Indent Request IND08781 (Draft) — chatter shows &quot;Indent Request created&quot; tagged &quot;Logged by KOMATIREDDY VINEETH REDDY&quot;">
       <div class="placeholder">Screenshot: Indent Request IND08781 (Draft) — chatter shows "Indent Request created" tagged "Logged by KOMATIREDDY VINEETH REDDY"</div>
       <figcaption><b>indent-created-tagged.png</b> — first proof point: the creation message, which goes through Odoo's no-subtype tracking path, carries the correct employee.</figcaption>
     </figure>
 
     <h3><span class="step-num">6</span>Log out, second employee logs in through the same shared account</h3>
     <figure class="shot">
-      <img src="screenshots/employee_attribution_docs/confirm-identity-employee-2.png" alt="Screenshot: &quot;Confirm your identity&quot; page — Employee Login: anjanibhargav23@gmail.com">
+      <img src="screenshots/confirm-identity-employee-2.png" alt="Screenshot: &quot;Confirm your identity&quot; page — Employee Login: anjanibhargav23@gmail.com">
       <div class="placeholder">Screenshot: "Confirm your identity" page — Employee Login: anjanibhargav23@gmail.com</div>
       <figcaption><b>confirm-identity-employee-2.png</b></figcaption>
     </figure>
 
     <h3><span class="step-num">7</span>Change the record's status and check the chatter again</h3>
     <figure class="shot">
-      <img src="screenshots/employee_attribution_docs/indent-status-change-tagged.png" alt="Screenshot: same Indent Request, now Sent — chatter shows &quot;Draft → Sent (Status)&quot; tagged &quot;Logged by KALEPU ANJANI BHARGAV KUMAR&quot;, with the original creation message still correctly attributed to the first employee">
+      <img src="screenshots/indent-status-change-tagged.png" alt="Screenshot: same Indent Request, now Sent — chatter shows &quot;Draft → Sent (Status)&quot; tagged &quot;Logged by KALEPU ANJANI BHARGAV KUMAR&quot;, with the original creation message still correctly attributed to the first employee">
       <div class="placeholder">Screenshot: same Indent Request, now Sent — chatter shows "Draft → Sent (Status)" tagged "Logged by KALEPU ANJANI BHARGAV KUMAR", with the original creation message still correctly attributed to the first employee</div>
       <figcaption><b>indent-status-change-tagged.png</b> — the decisive proof: <i>two different employees</i>, sharing <i>one login</i>, get correctly and separately attributed for two different actions on the same record.</figcaption>
     </figure>
@@ -378,6 +378,6 @@
   </footer>
 
 </div>
-<script type="module" src="assets/scripts/main.js"></script>
+<script type="module" src="../assets/scripts/main.js"></script>
 </body>
 </html>
