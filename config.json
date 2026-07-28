@@ -5,8 +5,8 @@
     "description": "This portal provides secure access to the Harleys Fine Baking ODOO testing environments — UAT Test, Integration Test and Dev. Only authorized users should access these systems.",
     "projectsUrl": "https://github.com/users/harleystech/projects/1/views/1",
     "environments": [
-      { "name": "UAT Test", "url": "https://harleys-harley-test2-35143199.dev.odoo.com/odoo", "environment": "UAT Testing" },
-      { "name": "Integration Test", "url": "https://harleys-harley-test-34263692.dev.odoo.com/odoo", "environment": "Integration Testing" },
+      { "name": "UAT Test", "url": "https://harleys-harley-test-34263692.dev.odoo.com/odoo", "environment": "UAT Testing" },
+      { "name": "Integration Test", "url": "https://harleys-harley-test2-35143199.dev.odoo.com/odoo", "environment": "Integration Testing" },
       { "name": "Dev Link", "url": "https://admin.taildfc619.ts.net/", "environment": "Development" }
     ],
     "environment": "Testing",
