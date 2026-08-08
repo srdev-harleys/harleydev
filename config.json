@@ -6,7 +6,7 @@
     "projectsUrl": "https://github.com/users/harleystech/projects/1/views/1",
     "environments": [
       { "name": "UAT Test", "url": "https://harleys-harley-test-35703063.dev.odoo.com/odoo", "environment": "UAT Testing" },
-      { "name": "Integration Test", "url": "https://harleys-harley-test2-35143199.dev.odoo.com/odoo", "environment": "Integration Testing" },
+      { "name": "Integration Test", "url": "https://harleys-harley-test2-36114657.dev.odoo.com/", "environment": "Integration Testing" },
       { "name": "Dev Link", "url": "https://admin.taildfc619.ts.net/", "environment": "Development" }
     ],
     "environment": "Testing",
