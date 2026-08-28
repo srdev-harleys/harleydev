@@ -30,6 +30,7 @@ async function init() {
     const envCards = environments.map((env) => ({
       name: env.name,
       url: env.url,
+      links: env.links,
       icon: 'erp',
       status: 'Online',
       environment: env.environment,

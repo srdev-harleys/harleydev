@@ -7,7 +7,10 @@
     "environments": [
       { "name": "UAT Test", "url": "https://harleys-harley-test-36245891.dev.odoo.com/", "environment": "UAT Testing" },
       { "name": "Integration Test", "url": "https://harleys-harley-test2-36753137.dev.odoo.com/", "environment": "Integration Testing" },
-      { "name": "Dev Link", "url": "https://admin.taildfc619.ts.net/", "environment": "Development" }
+      { "name": "Dev Link", "environment": "Development", "links": [
+        { "label": "Public", "url": "https://dev.harleys.com:8443/web/login" },
+        { "label": "Office", "url": "https://192.168.10.159:8443/web/login" }
+      ] }
     ],
     "environment": "Testing",
     "footer": {

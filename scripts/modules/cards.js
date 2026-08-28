@@ -3,11 +3,15 @@
    ========================================================================== */
 import { getIcon } from './icons.js';
 import { escapeHtml } from './dom-utils.js';
+import { toggleLinkPopover } from './link-popover.js';
 
 /* Build application launcher cards from the "applications" array.
    An entry with no "url" of its own (e.g. the primary dev-environment
    card) falls back to defaultUrl — config.json's brand.launchUrl — so
-   that link only ever needs to be written down once. */
+   that link only ever needs to be written down once. An entry with a
+   "links" array (more than one destination, e.g. Dev Link's Public/Office
+   access points) renders its Launch control as a dropdown trigger instead
+   of a direct link — see link-popover.js. */
 export function renderApplications(container, applications = [], defaultUrl = '#') {
   if (!container) return;
   container.innerHTML = '';
@@ -15,13 +19,25 @@ export function renderApplications(container, applications = [], defaultUrl = '#
   applications.forEach((app) => {
     const isOnline = (app.status || '').toLowerCase() === 'online';
     const isFeatured = !!app.featured;
-    const card = document.createElement('a');
+    const hasMultiLink = Array.isArray(app.links) && app.links.length > 1;
+
+    const card = document.createElement(hasMultiLink ? 'div' : 'a');
     card.className = 'app-card' + (isFeatured ? ' is-featured' : '');
-    card.href = app.url || defaultUrl;
-    card.target = '_blank';
-    card.rel = 'noopener noreferrer';
+    if (!hasMultiLink) {
+      card.href = app.url || defaultUrl;
+      card.target = '_blank';
+      card.rel = 'noopener noreferrer';
+    }
     card.setAttribute('role', 'listitem');
     card.setAttribute('aria-label', `Launch ${app.name || 'application'}`);
+
+    const launchMarkup = hasMultiLink
+      ? `<button type="button" class="app-card__launch app-card__launch--btn" aria-haspopup="true" aria-expanded="false">
+          Launch ${getIcon('chevronDown')}
+        </button>`
+      : `<span class="app-card__launch">
+          Launch ${getIcon('external')}
+        </span>`;
 
     card.innerHTML = `
       ${isFeatured ? '<span class="app-card__ribbon">Primary</span>' : ''}
@@ -35,11 +51,17 @@ export function renderApplications(container, applications = [], defaultUrl = '#
         <h3 class="app-card__name">${escapeHtml(app.name || 'Application')}</h3>
         <span class="app-card__env">${escapeHtml(app.environment || 'Environment')}</span>
       </div>
-      <span class="app-card__launch">
-        Launch ${getIcon('external')}
-      </span>
+      ${launchMarkup}
     `;
     container.appendChild(card);
+
+    if (hasMultiLink) {
+      const trigger = card.querySelector('.app-card__launch--btn');
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleLinkPopover(trigger, app.links);
+      });
+    }
   });
 
   if (!applications.length) {

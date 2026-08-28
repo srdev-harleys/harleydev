@@ -1,0 +1,59 @@
+/* Link Popover — flyout menu for links with more than one destination (e.g. Dev Link's Public/Office). */
+.dropdown-caret { width: 12px; height: 12px; flex-shrink: 0; }
+
+.topnav__link--dropdown {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  appearance: none;
+  -webkit-appearance: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.btn-primary.btn-primary--dropdown {
+  border: none;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.app-card__launch--btn {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.link-popover {
+  position: fixed;
+  z-index: 200;
+  min-width: 170px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  background: var(--surface-solid);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-hover);
+}
+.link-popover[hidden] {
+  display: none;
+}
+
+.link-popover__item {
+  display: block;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--text);
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.link-popover__item:hover, .link-popover__item:focus-visible {
+  background: var(--accent-soft);
+  color: var(--primary);
+}
