@@ -9,7 +9,7 @@
 @import url("hero.css");       /* 7. Hero section                    */
 @import url("buttons.css");    /* 8. Primary button (hover + ripple) */
 @import url("app-cards.css");  /* 9. Application cards               */
-@import url("dropdown.css");   /* 9b. Multi-link dropdown popovers   */
+/* @import url("dropdown.css"); */ /* 9b. Multi-link dropdown popovers — disabled, Dev Link is a single link again */
 @import url("info-cards.css"); /* 10. Information cards              */
 @import url("updates.css");    /* 11. Recent updates                 */
 @import url("footer.css");     /* 12. Footer                         */
