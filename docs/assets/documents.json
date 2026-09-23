@@ -13,6 +13,20 @@
       "updated": "2026-07-23",
       "userGuide": "employee-attribution/user-guide.html",
       "developerGuide": "employee-attribution/developer-guide.html"
+    },
+    {
+      "title": "Hyperpure Vendor Integration",
+      "description": "Sending Purchase Orders to Hyperpure, receiving vendor status updates by webhook, and syncing Hyperpure's own pricing onto the native vendor pricelist — plus the open IP-whitelisting and search_products blockers.",
+      "updated": "2026-09-23",
+      "userGuide": "hyperpure-integration/user-guide.html",
+      "developerGuide": "hyperpure-integration/developer-guide.html"
+    },
+    {
+      "title": "Rista POS Integration — Sales, Sold-Out and Outlet Status Reports",
+      "description": "How Harley's actual point-of-sale vendor (Rista) feeds five reporting screens in Odoo — the pull pipeline, the shared Outlet Master/Item mapping tables, and the missing-vs-zero distinction on every numeric field.",
+      "updated": "2026-09-23",
+      "userGuide": "rista-integration/user-guide.html",
+      "developerGuide": "rista-integration/developer-guide.html"
     }
   ]
 }

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rista Sales Reports — Guide for Employees &amp; Managers</title>
+<link rel="stylesheet" href="../assets/styles/main.css">
+</head>
+<body>
+<div class="page">
+
+  <a class="back-link" href="../index.html">&larr; Back to documentation home</a>
+
+  <header class="doc-head">
+    <p class="eyebrow">User Guide — Harleys Odoo 19 Enterprise</p>
+    <h1>Rista Sales Reports</h1>
+    <p class="dek">Every order rung up in-store or through Zomato/Swiggy passes through Rista, our POS system. This guide covers where to see that data inside Odoo, what each report is for, and the two mapping screens that connect Rista's own branch/item codes to our warehouses and products.</p>
+    <div class="meta">
+      <span><b>Audience</b> Anyone viewing Rista sales reports, or maintaining Outlet/Item Mapping</span>
+      <span><b>Reading time</b> ~6 minutes</span>
+    </div>
+  </header>
+
+  <nav class="toc">
+    <b>Contents</b>
+    <ol>
+      <li><a href="#what">What this is, and where to find it</a></li>
+      <li><a href="#reports">The five reports, and which one to use</a></li>
+      <li><a href="#mapping">Outlet Mapping and Item Mapping</a></li>
+      <li><a href="#blanks">Why some cells are blank</a></li>
+      <li><a href="#access">Who can see what</a></li>
+      <li><a href="#faq">Common questions</a></li>
+    </ol>
+  </nav>
+
+  <section id="what">
+    <h2>1. What this is, and where to find it</h2>
+    <p>Rista is the point-of-sale system Harley's stores actually use to ring up orders — not Odoo. This integration brings that sales data into Odoo automatically, every day, purely so it can be viewed, filtered and exported alongside everything else here. It's read-only: nothing done in these screens changes anything in Rista.</p>
+    <figure class="shot">
+      <img src="screenshots/pos-repository-app.png" alt="Screenshot: POS Repository app home, Rista Reports and Configuration menus">
+      <div class="placeholder">Screenshot: POS Repository app home, with Rista Reports and Configuration in the top menu</div>
+      <figcaption><b>pos-repository-app.png</b> — open the <b>POS Repository</b> app, then <b>Rista Reports</b> for anything below.</figcaption>
+    </figure>
+  </section>
+
+  <section id="reports">
+    <h2>2. The five reports, and which one to use</h2>
+    <table>
+      <thead><tr><th>Report</th><th>Shows</th><th>Use it when...</th></tr></thead>
+      <tbody>
+        <tr><td><b>POS Orders</b></td><td>One row per order/invoice</td><td>You want order-level totals — how many orders, total sales, by branch or day</td></tr>
+        <tr><td><b>POS Order Lines</b></td><td>One row per item sold</td><td>You want a lean, focused view of what sold — quantity, price, discount, nothing else</td></tr>
+        <tr><td><b>Sales Detail</b></td><td>One row per item sold, every available column</td><td>You need a specific field not shown on POS Order Lines — this has everything, with columns you don't need hidden behind the column-picker (top-right of the list)</td></tr>
+        <tr><td><b>Sold Out History</b></td><td>Items that went out of stock and came back</td><td>Checking how often, and for how long, a specific item was unavailable</td></tr>
+        <tr><td><b>Outlet Status</b></td><td>Current status per branch and delivery channel</td><td>A live snapshot — not a history — of whether a branch is currently open on Zomato, Swiggy, etc.</td></tr>
+      </tbody>
+    </table>
+    <figure class="shot">
+      <img src="screenshots/pos-orders-list.png" alt="Screenshot: POS Orders list, grouped by branch, showing invoice number, channel, status and amounts">
+      <div class="placeholder">Screenshot: POS Orders list, grouped by branch, invoice number/channel/status/amount columns</div>
+      <figcaption><b>pos-orders-list.png</b></figcaption>
+    </figure>
+    <p>Every report can be grouped, filtered and pivoted the same way as any other Odoo list — by branch, by day, by channel (Zomato/Swiggy/in-store), or by brand.</p>
+  </section>
+
+  <section id="mapping">
+    <h2>3. Outlet Mapping and Item Mapping</h2>
+    <p>Rista knows branches and items by its own codes. These two screens (under <b>Configuration</b>) connect those codes to the actual Odoo warehouse or product, so reports elsewhere in Odoo can use them too.</p>
+
+    <h3><span class="step-num">1</span>Open Outlet Mapping</h3>
+    <p>Lists every Rista branch, and which Odoo warehouse it's linked to.</p>
+    <figure class="shot">
+      <img src="screenshots/outlet-mapping-list.png" alt="Screenshot: Outlet Mapping list, branch code/name and mapped warehouse">
+      <div class="placeholder">Screenshot: Outlet Mapping list — branch code, name, and mapped warehouse</div>
+      <figcaption><b>outlet-mapping-list.png</b></figcaption>
+    </figure>
+
+    <h3><span class="step-num">2</span>Use Auto-Map first</h3>
+    <p>Click <b>Auto-Map</b> at the top of the list — it matches any unmapped branch to a warehouse with an exact matching code or name, in one click. Anything it can't match with confidence is left alone for you to check.</p>
+
+    <h3><span class="step-num">3</span>Fill in the rest by hand, or by Excel</h3>
+    <p>For anything Auto-Map couldn't resolve, either pick the warehouse directly on that row, or use Odoo's own Excel export/import: export the list, fill in the Warehouse Code column, re-import.</p>
+
+    <h3><span class="step-num">4</span>Item Mapping works the same way</h3>
+    <p>Same idea, connecting Rista's item codes (SKUs) to Odoo products — its own Auto-Map button, and the same manual/Excel options.</p>
+    <figure class="shot">
+      <img src="screenshots/item-mapping-list.png" alt="Screenshot: Item Mapping list, SKU code/name and mapped product">
+      <div class="placeholder">Screenshot: Item Mapping list — SKU code, name, and mapped product</div>
+      <figcaption><b>item-mapping-list.png</b></figcaption>
+    </figure>
+    <div class="callout warn">
+      <b>Seeing two items with the exact same name?</b>
+      That's expected for cakes that come in more than one size — Rista sends the same name for every size of a cake, so "Signature Belgium Chocolate Medovik Cake" showing up twice usually means one row is the 600&nbsp;Gm size and the other is 1&nbsp;Kg, not a duplicate. If you're unsure which is which, check the item's SKU code against Rista directly before mapping it.
+    </div>
+  </section>
+
+  <section id="blanks">
+    <h2>4. Why some cells are blank</h2>
+    <p>You may notice some columns are blank for certain orders — this is intentional, not missing data. Rista simply doesn't send every field for every order. For example:</p>
+    <ul>
+      <li><b>Device Label, Sale By User, Person Count</b> — only sent for orders rung up on an in-store terminal. A Zomato/Swiggy delivery order rung in automatically by Rista's own system won't have these, and that's correct.</li>
+      <li><b>Voided Time, Processed Attempt Time</b> — only filled in if that specific thing actually happened to the order. Most orders never get voided, so this stays blank for them.</li>
+    </ul>
+    <p>Where a number is shown as blank rather than <code>0</code>, that's also deliberate — it means Rista genuinely didn't send a value for that field on that particular order, as opposed to sending an actual <code>0</code>. Both are shown differently on purpose, so a blank never gets mistaken for a real zero.</p>
+  </section>
+
+  <section id="access">
+    <h2>5. Who can see what</h2>
+    <p>Viewing the five reports above only requires the <b>Rista Reports Viewer</b> permission — a manager can grant this on its own, without also handing out access to the technical Connect/integration settings. Outlet Mapping, Item Mapping and the Configuration menu require the broader Connect Manager permission, since those affect how data is captured.</p>
+  </section>
+
+  <section id="faq">
+    <h2>6. Common questions</h2>
+    <div class="callout warn">
+      <b>Can I edit an order or item from these screens?</b>
+      No — everything here is read-only, pulled from Rista automatically. To fix something about an actual order, it needs to be corrected in Rista itself; the correction will appear here on the next sync.
+    </div>
+    <div class="callout warn">
+      <b>How current is this data?</b>
+      Synced automatically once a day. It's not a live, real-time feed — Outlet Status in particular is a snapshot as of the last sync, not the current second.
+    </div>
+    <div class="callout warn">
+      <b>An item or branch is unmapped — does that break the report?</b>
+      No, the order/item still shows up with all its own data. Only the link to a specific Odoo warehouse or product is missing until it's mapped, which mainly matters if you're trying to cross-reference against inventory or product-level reports elsewhere in Odoo.
+    </div>
+    <div class="callout warn">
+      <b>Why do POS Order Lines and Sales Detail look similar?</b>
+      They show the same underlying items, just with a different number of columns — POS Order Lines is deliberately kept to the 10 essentials, Sales Detail has everything available in case you need a less common field.
+    </div>
+  </section>
+
+  <footer>
+    User guide — Harleys Odoo 19 Enterprise. For the technical implementation reference, see the <a href="developer-guide.html">Developer Guide</a>.
+  </footer>
+
+</div>
+<script type="module" src="../assets/scripts/main.js"></script>
+</body>
+</html>

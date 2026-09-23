@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hyperpure Vendor Integration — Implementation Reference</title>
+<link rel="stylesheet" href="../assets/styles/main.css">
+</head>
+<body>
+<div class="page">
+
+  <a class="back-link" href="../index.html">&larr; Back to documentation home</a>
+
+  <header class="doc-head">
+    <p class="eyebrow">Implementation Reference — Harleys Odoo 19 Enterprise</p>
+    <h1>Hyperpure Vendor Integration</h1>
+    <p class="dek">How Purchase Orders are sent to Hyperpure (Zomato's food-supply arm) for outlet-mapped GST entities, how vendor status updates come back by webhook, and how Hyperpure's own vendor pricing is synced onto the native vendor pricelist.</p>
+    <div class="meta">
+      <span><b>Module</b> harleys_connect (application/purchase)</span>
+      <span><b>Status</b> Working for order placement and webhook receipt; price sync and go-live IP whitelisting are open (see §9)</span>
+      <span><b>Scope</b> res.partner / purchase.order / connect.partner / connect.endpoint / connect.manager</span>
+    </div>
+  </header>
+
+  <nav class="toc">
+    <b>Contents</b>
+    <ol>
+      <li><a href="#problem">The problem</a></li>
+      <li><a href="#architecture">Architecture: a generic engine, Purchase-specific logic</a></li>
+      <li><a href="#gst">GST multi-entity vendor structure</a></li>
+      <li><a href="#etransfer">Part 1 — Sending a PO (E-Transfer)</a></li>
+      <li><a href="#pricesync">Part 2 — Syncing vendor prices</a></li>
+      <li><a href="#webhook">Part 3 — Receiving status updates (webhook)</a></li>
+      <li><a href="#walkthrough">Walkthrough (as tested)</a></li>
+      <li><a href="#files">Module reference</a></li>
+      <li><a href="#blockers">Open blockers: IP whitelisting and search_products</a></li>
+      <li><a href="#decisions">Design decisions and alternatives ruled out</a></li>
+      <li><a href="#limitations">Known limitations / open items</a></li>
+      <li><a href="#schema">Full schema reference</a></li>
+    </ol>
+  </nav>
+
+  <section id="problem">
+    <h2>1. The problem</h2>
+    <p>Harleys buys a large share of its raw materials from Hyperpure. Historically this meant a Purchase Order approved in Odoo, then re-keyed by hand into Hyperpure's own ordering system — no shared source of truth, no automatic status feedback, and pricing that could silently drift between the two systems.</p>
+    <p>The goal: an approved Odoo Purchase Order should be submittable to Hyperpure directly, its vendor-side progress (dispatched, delivered, cancelled, partially fulfilled) should flow back into the same PO automatically, and Hyperpure's own agreed pricing should be periodically pulled into Odoo's native vendor pricelist rather than re-typed.</p>
+  </section>
+
+  <section id="architecture">
+    <h2>2. Architecture: a generic engine, Purchase-specific logic</h2>
+    <p><code>harleys_connect</code> is a vendor-agnostic external-partner integration engine — nothing Hyperpure-specific lives in its <code>models/</code> folder. Rista/Posist (a separate reporting-only integration, module <code>harleys_pos_registry</code>) is plugged into the same engine.</p>
+    <table>
+      <thead><tr><th>Model</th><th>Role</th></tr></thead>
+      <tbody>
+        <tr><td><code>connect.partner</code></td><td>One external vendor account (credentials, auth mode, environment variables). Hyperpure is one record (id 5) shared across four vendor-facing <code>res.partner</code> entities — see §3.</td></tr>
+        <tr><td><code>connect.endpoint</code></td><td>One HTTP operation on that partner: path template, HTTP method, params (query/header/path/body, each sourced from a partner variable, a reference dataset, a static value, or the request payload), direction (push/pull), and whether it's a webhook receiver.</td></tr>
+        <tr><td><code>connect.manager</code></td><td>The single call site for every outbound <code>requests.request()</code> and every inbound <code>receive_webhook()</code> — logging (<code>connect.log</code>), retries, idempotency.</td></tr>
+        <tr><td><code>processors.py</code> (<code>BaseProcessor</code>, <code>ProcessorRegistry</code>, <code>ProcessorResult</code>)</td><td>Vendor-agnostic response handling contract. Purchase registers its own processors (§6) without <code>harleys_connect</code> itself knowing anything about purchase orders.</td></tr>
+      </tbody>
+    </table>
+    <p>Everything Hyperpure/Purchase-specific — the payload shape, the price-sync wizard, the webhook status processor, the delivery-slot field — lives under <code>harleys_connect/application/purchase/</code>, resolving handlers from vendor bindings <i>at execution time</i>, not at registry startup.</p>
+  </section>
+
+  <section id="gst">
+    <h2>3. GST multi-entity vendor structure</h2>
+    <p>Hyperpure requires GST-registration-level separation: a single API account (one <code>connect.partner</code>) is split across <b>four</b> <code>res.partner</code> vendor records, one per GST entity/state. <code>product.supplierinfo</code> is already naturally segmented per vendor record — no separate product catalogue needed per GST, each entity just has its own price/vendor-code rows against the shared product list.</p>
+    <table>
+      <thead><tr><th>Entity</th><th>res.partner id</th><th>GSTIN</th><th>Outlet dataset</th><th>Product codes mapped</th></tr></thead>
+      <tbody>
+        <tr><td>HYD / Telangana</td><td>31</td><td>36AAACZ8867B1Z1</td><td><code>outlets</code> — 2 real Hyperpure outlets</td><td><b>5</b> of 134 supplierinfo rows</td></tr>
+        <tr><td>BLR / Karnataka</td><td>82</td><td>29AAACZ8867B1ZW</td><td><code>outlets_blr</code> — 25 outlets, placeholder ids</td><td>0 of 156</td></tr>
+        <tr><td>MH / Maharashtra</td><td>83</td><td>27AAACZ8867B1Z0</td><td><code>outlets_mh</code> — 22 outlets, placeholder ids</td><td>0 of 246</td></tr>
+        <tr><td>NCR / Haryana</td><td>5387</td><td>06AAACZ8867B1Z4</td><td><code>outlets_ncr</code> — 7 outlets, placeholder ids</td><td>0 of 86</td></tr>
+      </tbody>
+    </table>
+    <p>Only HYD has real Hyperpure-issued outlet ids (<code>802249</code> "HYD-CS", <code>802297</code> "HYD-KMP" — both labelled <code>EX-HP-HARLEYS-TEST*</code> on Hyperpure's own buyer portal). BLR/MH/NCR's outlet ids (<code>900001</code>+) are internal placeholders pending real values from Hyperpure.</p>
+    <div class="callout warn">
+      <b>Unmapped warehouses</b>
+      <code>VIJ</code> (7 warehouses) and <code>WH</code> (1 warehouse) are not yet mapped to any of the four GST entities — unresolved, needs user/Hyperpure input before those warehouses can transact with Hyperpure at all.
+    </div>
+  </section>
+
+  <section id="etransfer">
+    <h2>4. Part 1 — Sending a PO (E-Transfer)</h2>
+    <p>Entry point: <code>action_send_to_vendor()</code> on <code>purchase.order</code>, exposed as a button (<code>show_vendor_send_button</code>, visible once a PO is approved and its vendor has a Connect integration). It filters out non-integrated vendors silently (a broad list selection routinely includes ordinary vendors too) and opens <code>connect.order.confirm.wizard</code> in mode <code>transfer</code> — the same wizard model used for price sync (§5), reused rather than duplicated.</p>
+
+    <h3>Pre-flight checks — <code>_check_transfer()</code></h3>
+    <p>Before any network call: PO is <code>state == 'purchase'</code>, not already sent/mid-submission, the vendor connection is authenticated, vendor units are confirmed (<code>connect_units_confirmed</code>), a resolvable vendor currency exists and matches the PO's own currency, Validate/Place endpoints (if configured) are active Push endpoints with a generated handler reference and identical static body fields, and <code>Idempotent Safe Retry</code> is disabled on placement (a retried "safe" call would silently duplicate a real vendor order).</p>
+
+    <h3>Building the payload — <code>_build_hyperpure_payload()</code></h3>
+    <p>Per order line: resolves the vendor product code and quantity factor via <code>vendor._item()</code> (§5 covers where that code comes from), converts to whole vendor sub-units (rejects non-integer quantities), and includes <code>reference_price</code> (tax-excluded line subtotal per sub-unit) + <code>is_strict_pricing: true</code> unless the code is in an explicit omit-set (used when re-submitting after accepting a vendor price mismatch). Two fields are deliberately <b>never</b> sent unless explicitly set:</p>
+    <ul>
+      <li><code>delivery_date</code> — Hyperpure computes its own Target Delivery Date per outlet, confirmed live to shift over time (advanced a full day between two submissions minutes apart); a guessed date that doesn't match gets the whole order rejected, so it's omitted entirely.</li>
+      <li><code>delivery_slot</code> (<code>connect_delivery_slot</code> field on the PO) — same rejection risk per Hyperpure's own docs if it doesn't match their actual assigned slot, so it's opt-in per order rather than derived.</li>
+    </ul>
+    <div class="callout">
+      <b>A documented type contradiction, resolved by trusting the samples</b>
+      <code>product_number</code>: Hyperpure's own field-type table says integer, but every sample request body in their docs sends it quoted as a string. The code sends it as a string (<code>str(int(code_number))</code>) — matches the samples, which turned out to be what their API actually accepts, not the schema table.
+    </div>
+
+    <h3>Submitting — <code>_transfer_isolated()</code></h3>
+    <p>Runs on an <b>owned cursor</b> (not the caller's), row-locks the PO (<code>SELECT ... FOR UPDATE</code>) before every state transition, and commits a "submission fence" (<code>vendor_transfer_state = 'submitting'</code>) <i>before</i> calling Place — a worker crash after that point leaves the PO blocked for manual reconciliation rather than silently eligible for accidental duplication on retry. Validate (optional per vendor) runs first if configured; a rejection there never touches "submitting" state. Placement's own response carries only an acknowledgement message — no vendor order number yet, since that arrives later by webhook (§6).</p>
+
+    <h3>Humanizing vendor errors — <code>_humanize_error()</code> / <code>_extract_price_corrections()</code></h3>
+    <p>A raw "HTTP 400: validation failed for some products in the order" tells a buyer nothing actionable. When Hyperpure's response includes entity-level detail (product name + plain-language reason, e.g. <i>"RE PAPER STRAWS 6MM: Price difference between actual price (₹ 97.00) and price entered by user (₹ 101.00) is less than lower threshold..."</i>), that's shown instead. <code>_extract_price_corrections()</code> separately pulls out just the <code>PRODUCT_PRICE_MISMATCH</code> rows as a code→expected-price map, so the review wizard can offer "accept vendor pricing" per line rather than forcing a full manual re-key.</p>
+  </section>
+
+  <section id="pricesync">
+    <h2>5. Part 2 — Syncing vendor prices</h2>
+    <p><code>action_sync_vendor_prices()</code> on the vendor (Purchase-manager gated) opens the same <code>connect.order.confirm.wizard</code> in mode <code>prices</code>.</p>
+
+    <h3>Where the vendor product code comes from — <code>_item()</code></h3>
+    <p>Two mutually exclusive sources, resolved per vendor:</p>
+    <ul>
+      <li><b>Item reference dataset</b> (<code>connect_item_dataset_id</code>) — an uploaded CSV/XLSX, looked up by the product's Internal Reference (<code>default_code</code>). Also supplies the search keyword and quantity factor columns.</li>
+      <li><b>Native pricelist fallback</b> (no item dataset configured — the case for all four Hyperpure entities today) — the product's own <code>product.supplierinfo.product_code</code> for that vendor, required to be a single unambiguous integer across all matching seller rows. The search keyword falls back to the product's own <code>name</code> in this case — see the callout below.</li>
+    </ul>
+    <div class="callout warn">
+      <b>Search keyword is our product name, not Hyperpure's catalogue name</b>
+      Since none of the four entities have an item dataset, every <code>search_query</code> sent to Hyperpure is literally <code>product.name</code> — e.g. <code>RE PAPER STRAWS 6MM</code>, <code>MQ BUTTER PAPER</code>. Those <code>RE</code>/<code>MQ</code>/<code>2M</code> prefixes are Harley's own internal SKU-family abbreviations, not Hyperpure catalogue phrasing (confirmed against a real completed sandbox order: their actual catalogue names look like <i>"Hyperpure - Butter Croissant, Handrolled (75 gm/pc) (Frozen)"</i>). This is one contributing factor in the <code>search_products</code> investigation — see §9.
+    </div>
+
+    <h3>Preview — <code>_preview_price_sync()</code></h3>
+    <p>Builds the product set to reprice (from the item dataset, or every product with an existing supplierinfo row for this vendor — capped at 1–500 products per batch), then per product calls <code>vendor._price(product, warehouse, live=True, ...)</code> — a real Hyperpure <code>search_products</code> lookup by vendor code — for <code>vendor_price</code>, and separately <code>live=False</code> for <code>our_price</code> (today's native-pricelist price, for the side-by-side comparison only). Lines that fail the live lookup keep <code>vendor_price = 0.0</code> and get a <code>mismatch_note</code>; they are not treated as errors that block the rest of the batch.</p>
+
+    <h3>Apply — <code>action_apply_price_sync()</code></h3>
+    <p>Per successfully-synced line: finds the matching <code>product.supplierinfo</code> row (variant match first, template-level fallback), skips (and reports) ambiguous matches — e.g. multiple quantity tiers — rather than guessing. Row-locks and re-checks the existing price against what was shown at preview time (<code>preview_context</code> fingerprint also catches outlet/endpoint/dataset drift since preview); a changed price is skipped and flagged, not silently overwritten. Writes the synced price <b>in place</b> — no history row — or creates a new supplierinfo row (stamping currency only on creation) if the product had none yet.</p>
+    <div class="callout">
+      <b>Bug fixed 2026-09-23 — partial coverage no longer blocks Apply</b>
+      <code>price_check_done</code> (gates the Apply button) used to require <i>every</i> previewed product to have synced successfully. With only 5 of HYD's 134 mapped products having a vendor code, the Apply button never appeared for a real batch. Changed to require only <i>some</i> line to have synced (<code>bool(available_count)</code>) — Apply now writes whatever succeeded and leaves the rest at their default zero, matching how the write logic itself already tolerated partial coverage line-by-line. The preview summary now also states the split explicitly, e.g. <i>"5 of 115 products have a synced price; the rest have no vendor product code yet and are left unchanged."</i>
+    </div>
+    <p>This replaced an earlier CSV/reference-dataset mechanism entirely (fields <code>connect_price_dataset_id</code>/<code>connect_price_code_column</code>/<code>connect_price_outlet_column</code>/<code>connect_price_value_column</code> were removed from <code>res_partner.py</code>): <code>_price(live=False)</code> now unconditionally reads the native pricelist via <code>_select_seller()</code>, so every subsequent PO review automatically compares against whatever this sync last wrote, with no separate cached file in the loop.</p>
+    <div class="callout warn">
+      <b>Open design question, unresolved</b>
+      <code>_build_hyperpure_payload()</code> sends the PO line's own stored <code>price_unit</code> as <code>reference_price</code> at submission time — not a fresh pull of the currently-synced vendor price. These can drift apart (PO created, then supplierinfo re-synced later, never re-linked). A read-only "Vendor Ref. Price" column (<code>connect_vendor_price</code>, computed via <code>_price(live=False)</code>) already shows the current synced price for comparison on the PO line. Whether E-Transfer should substitute the live synced price instead of the PO's own price — trading away <code>is_strict_pricing</code>'s value as a genuine "did we agree on this" check — is not yet decided.
+    </div>
+  </section>
+
+  <section id="webhook">
+    <h2>6. Part 3 — Receiving status updates (webhook)</h2>
+    <p>Route: <code>controllers/webhook.py</code> — <code>POST /harleys_connect/webhook/&lt;partner_code&gt;/&lt;token&gt;/&lt;operation&gt;</code>, <code>auth="public"</code> (necessarily — Hyperpure has no Odoo user identity), <code>csrf=False</code>.</p>
+    <h3>Request gating, in order</h3>
+    <ol>
+      <li>Partner lookup by <code>(partner_code, webhook_token, active)</code> — unknown or wrong token → plain 404, before anything else runs. This 128-bit random token is the <b>primary, and currently only active</b>, access gate.</li>
+      <li>Optional header-secret check (<code>webhook_header_name</code> / <code>webhook_header_variable_key</code>, compared with <code>hmac.compare_digest</code>) — <b>exists in code but is deliberately not yet configured</b> for Hyperpure, pending their real secret value. Until it is, the URL token alone is what stands between a caller and this endpoint.</li>
+      <li>Endpoint lookup (matching <code>operation_key</code>, must be an active webhook-flagged <code>connect.endpoint</code>) → 404 if not found.</li>
+      <li>Body must be JSON → 400 otherwise.</li>
+      <li>Optional <code>Idempotency-Key</code> header — a prior successful delivery with the same key short-circuits to a plain "duplicate" 200 without reprocessing.</li>
+      <li><code>connect.manager.receive_webhook()</code> resolves the registered processor (<code>_get_response_processor</code>, matched by which vendor record has this endpoint bound as its webhook) and calls it.</li>
+    </ol>
+    <div class="callout warn">
+      <b>Security posture, stated plainly</b>
+      Right now, anyone who obtains the URL can call it with no further authentication. This is a reasonable baseline for controlled testing (the token is unguessable), but the header-secret check should be turned on with Hyperpure's real value before this is trusted at production scale. The blast radius of even a fully "successful" forged call is narrow either way — see below — but it's not nothing.
+    </div>
+
+    <h3><code>PurchaseOrderUpdateProcessor</code> — the status-rank state machine</h3>
+    <p>Each event in the payload's <code>orders</code> array correlates to a PO via <code>external_order_id</code> (must resolve to a PO already bound to this exact vendor + webhook endpoint, and with a real pending submission — <code>vendor_order_sent</code> or <code>vendor_transfer_state in ('submitting', 'unknown')</code>). Row-locked before every write.</p>
+    <table>
+      <thead><tr><th>Status</th><th>Rank</th></tr></thead>
+      <tbody>
+        <tr><td>PLACED</td><td>1</td></tr>
+        <tr><td>COMPLETED</td><td>2</td></tr>
+        <tr><td>DISPATCHED</td><td>3</td></tr>
+        <tr><td>DELIVERED</td><td>4 (terminal)</td></tr>
+        <tr><td>CANCELLED</td><td>4 (terminal)</td></tr>
+      </tbody>
+    </table>
+    <p>A lower-ranked update than what's already stored is silently ignored (protects against out-of-order delivery); DELIVERED/CANCELLED are locked once reached — a later update for the same vendor order number is dropped unless it's the same status again. Where an order was fulfilled across multiple vendor sub-orders and they disagree, the overall status is <code>PARTIAL</code>, optionally relabelled through an admin-configured status dataset (<code>connect_status_dataset_id</code>). Every delivery — not just the field-overwriting current status — is also recorded as a chatter note (<code>"Vendor webhook: order %s -&gt; %s"</code>), so the full history survives even though the summary field itself only ever shows the latest state. <b>Vendor delivery is not an Odoo stock receipt or accounting event</b> — this processor never touches either; Odoo's own approval/receipt/billing states are untouched.</p>
+    <div class="callout">
+      <b>Chatter always says "Public user" — this is expected, not a bug</b>
+      <code>message_post()</code>'s default author is <code>self.env.user</code>, which resolves to Odoo's generic public user under an <code>auth="public"</code> route — true whether the real caller is Hyperpure, a test curl, or Postman. The note body's own text ("Vendor webhook: ...") is what actually identifies the source. Changing the displayed author would require explicitly overriding <code>author_id</code> on the post — a cosmetic option, not currently done.
+    </div>
+
+    <h3>odoo.sh production feasibility</h3>
+    <p><b>Receiving</b> this webhook is unaffected by odoo.sh having no static egress IP — any reverse-proxy-fronted HTTPS endpoint works. This was proven directly: an ngrok tunnel + nginx in front of the admin dev server stood in for the role odoo.sh's own front proxy would play, and real external POSTs (curl, and a Postman collection run through the collection runner) were received, processed, and reflected correctly end to end. The real blocker is <b>outbound</b> calls (Validate/Place/search_products) — see §9.</p>
+  </section>
+
+  <section id="walkthrough">
+    <h2>7. Walkthrough (as tested)</h2>
+    <p>The exact sequence used to verify order placement and webhook receipt, run twice — once on the original local dev server, once from scratch on a second, independently re-provisioned admin/dev machine.</p>
+
+    <h3><span class="step-num">1</span>Configure the vendor's Purchase Integration</h3>
+    <figure class="shot">
+      <img src="screenshots/vendor-purchase-integration-configuration.png" alt="Screenshot: vendor contact form, Purchase Integration Configuration screen, Actions and Endpoints tab">
+      <div class="placeholder">Screenshot: vendor contact form → Purchase Integration Configuration → Actions and Endpoints tab, showing the bound price/validate/place/cancel/webhook endpoints</div>
+      <figcaption><b>vendor-purchase-integration-configuration.png</b> — reached via the <b>Purchase Integration Configuration</b> button on the vendor's own contact form.</figcaption>
+    </figure>
+
+    <h3><span class="step-num">2</span>Send an approved PO to the vendor</h3>
+    <figure class="shot">
+      <img src="screenshots/etransfer-review-wizard.png" alt="Screenshot: Purchase Integration Review wizard, transfer mode, price comparison table">
+      <div class="placeholder">Screenshot: Purchase Integration Review wizard (mode: E-Transfer), showing current vs. reference price per line before sending</div>
+      <figcaption><b>etransfer-review-wizard.png</b></figcaption>
+    </figure>
+
+    <h3><span class="step-num">3</span>Confirm the order landed on Hyperpure's own side</h3>
+    <figure class="shot">
+      <img src="screenshots/hyperpure-buyer-portal-order.png" alt="Screenshot: dev.hyperpure.com buyer portal, order detail page, matching items and total">
+      <div class="placeholder">Screenshot: Hyperpure's own dev buyer portal (dev.hyperpure.com), order detail page for the same PO, confirming items/quantities/total match</div>
+      <figcaption><b>hyperpure-buyer-portal-order.png</b> — cross-checked directly against Hyperpure's own system, not just our own success message.</figcaption>
+    </figure>
+
+    <h3><span class="step-num">4</span>Deliver a webhook status update and confirm the chatter</h3>
+    <figure class="shot">
+      <img src="screenshots/po-chatter-webhook-note.png" alt="Screenshot: Purchase Order form, chatter showing 'Vendor webhook: order ... -> DISPATCHED'">
+      <div class="placeholder">Screenshot: Purchase Order form, chatter panel showing a "Vendor webhook: order &lt;number&gt; -&gt; &lt;status&gt;" note, posted by Public user</div>
+      <figcaption><b>po-chatter-webhook-note.png</b> — one note per delivery, and the Vendor Orders summary field updated alongside it.</figcaption>
+    </figure>
+
+    <h3><span class="step-num">5</span>Verify the webhook externally, outside our own infrastructure</h3>
+    <figure class="shot">
+      <img src="screenshots/postman-collection-runner-results.png" alt="Screenshot: Postman collection runner, 5 webhook requests (PLACED/DISPATCHED/DELIVERED/CANCELLED/unknown-PO), all passing">
+      <div class="placeholder">Screenshot: Postman collection runner results — PLACED, DISPATCHED, DELIVERED (with order_items), CANCELLED, and an unknown-PO negative case, all behaving as predicted</div>
+      <figcaption><b>postman-collection-runner-results.png</b> — run against an ngrok tunnel in front of the dev server, confirming the endpoint is reachable and behaves correctly from a genuinely external network, not just localhost.</figcaption>
+    </figure>
+
+    <h3><span class="step-num">6</span>Sync vendor prices</h3>
+    <figure class="shot">
+      <img src="screenshots/sync-vendor-prices-preview.png" alt="Screenshot: Purchase Integration Review wizard, prices mode, synced vs current price per product, partial coverage summary line">
+      <div class="placeholder">Screenshot: Sync Vendor Prices preview — synced price next to current price per product, with the "N of M products have a synced price" summary line</div>
+      <figcaption><b>sync-vendor-prices-preview.png</b></figcaption>
+    </figure>
+  </section>
+
+  <section id="files">
+    <h2>8. Module reference</h2>
+    <table>
+      <thead><tr><th>File</th><th>Responsibility</th></tr></thead>
+      <tbody>
+        <tr><td><code>application/purchase/models/res_partner.py</code></td><td>Per-vendor Connect configuration (endpoint bindings, datasets, units/currency confirmation), <code>_item()</code>/<code>_outlet()</code>/<code>_price()</code>/<code>_purchase_currency()</code>, <code>action_sync_vendor_prices()</code>, <code>action_refresh_vendor_outlets()</code>.</td></tr>
+        <tr><td><code>application/purchase/models/purchase_order.py</code></td><td>Vendor order state fields, <code>action_send_to_vendor()</code>, <code>_check_transfer()</code>, <code>_build_hyperpure_payload()</code>, <code>_transfer_isolated()</code>, <code>_humanize_error()</code>/<code>_extract_price_corrections()</code>, <code>action_cancel_vendor_order()</code>, the PO-line vendor-code/price preview fields.</td></tr>
+        <tr><td><code>application/purchase/models/connect_manager.py</code></td><td><code>PurchaseCatalogueProcessor</code> (rejects unattended price application via a job), <code>PurchaseOrderUpdateProcessor</code> (the webhook status-rank state machine, §6), and <code>_get_response_processor()</code> — resolves which processor applies per-endpoint at execution time, not registry startup.</td></tr>
+        <tr><td><code>application/purchase/models/connect_partner_outlet.py</code></td><td><code>connect.partner.outlet</code> — a materialized, pickable mirror of one row from the outlet reference dataset, kept in sync by <code>reference_dataset.py</code> whenever the underlying file changes. Exists so a human can pick a specific outlet from a real list rather than typing a raw external id.</td></tr>
+        <tr><td><code>application/purchase/models/reference_dataset.py</code></td><td>Keeps <code>connect.partner.outlet</code> synced whenever a vendor's outlet dataset file is re-uploaded.</td></tr>
+        <tr><td><code>application/purchase/models/product_supplierinfo.py</code></td><td>Adds <code>mail.thread</code> tracking (<code>price</code>, <code>product_code</code>) to core <code>product.supplierinfo</code> — chatter history of price changes, including ones written by Sync Vendor Prices.</td></tr>
+        <tr><td><code>application/purchase/wizard/connect_order_confirm_wizard.py</code></td><td>The single review/apply wizard, shared by both E-Transfer (<code>mode="transfer"</code>) and Sync Vendor Prices (<code>mode="prices"</code>) — <code>_prepare_review()</code>, <code>_preview_price_sync()</code>, <code>action_confirm_send()</code>, <code>action_apply_price_sync()</code>.</td></tr>
+        <tr><td><code>application/purchase/wizard/connect_order_confirm_wizard_line.py</code></td><td>One line per product/PO-line under review: current price, synced/reference price, mismatch flags, vendor product code.</td></tr>
+        <tr><td><code>application/purchase/views/res_partner_views.xml</code></td><td>Vendor form's "Sync Vendor Prices" quick-action button; the <b>Purchase Integration Configuration</b> screen (Actions and Endpoints / Reference Datasets / Order Status tabs).</td></tr>
+        <tr><td><code>application/purchase/views/purchase_order_views.xml</code></td><td>Vendor Outlet / Delivery Slot fields, Vendor Orders summary, send/cancel buttons on the PO form.</td></tr>
+        <tr><td><code>application/purchase/views/vendor_pricelist_views.xml</code></td><td>Click-to-open (non-inline-editable) override for the plain "Vendor Pricelists" menu, so inline edit stays exclusive to the "By Vendor" screen.</td></tr>
+        <tr><td><code>application/purchase/views/product_supplierinfo_views.xml</code></td><td>Adds the chatter widget to the vendor pricelist line form (for the tracking in <code>product_supplierinfo.py</code>).</td></tr>
+        <tr><td><code>controllers/webhook.py</code></td><td>The one inbound HTTP route for every vendor's webhook (§6).</td></tr>
+        <tr><td><code>models/connect_manager.py</code> (generic)</td><td><code>execute_by_handler()</code> — the single outbound <code>requests.request()</code> call site for every push/pull operation, across every vendor.</td></tr>
+        <tr><td><code>models/connect_reference_dataset.py</code></td><td>Generic file-backed lookup table mechanism — outlet mapping, item mapping, and status-label mapping are all instances of this one model, not bespoke per-purpose tables.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="blockers">
+    <h2>9. Open blockers: IP whitelisting and search_products</h2>
+
+    <h3>IP whitelisting (blocks production go-live)</h3>
+    <p>Hyperpure mandates IP whitelisting on every outbound request. odoo.sh has no static IP (confirmed via Odoo's own docs — the <code>/_odoo.sh/ip-change</code> notification mechanism exists specifically because IPs rotate). Escalated to the Odoo.sh team directly by the user; unresolved as of this writing. <b>Fallback if Odoo.sh can't help</b>: route outbound Hyperpure calls through a fixed-IP proxy — one <code>proxies=</code> change at <code>connect_manager.py</code>'s single <code>requests.request()</code> call site.</p>
+
+    <h3><code>search_products</code> (blocks live price lookups in both E-Transfer review and Sync Vendor Prices)</h3>
+    <p>100% failure rate — every logged call since 2026-09-16 (110+ calls) returns the same generic error, for every query tried: our own internal product names, generic terms ("milk"), and real confirmed catalogue names pulled directly from an actual completed sandbox order ("Dotpe QA Testing", "Hyperpure - Butter Croissant, Handrolled (75 gm/pc) (Frozen)"). Two repeats of an identical real-name query returned <i>different</i> status codes (400, then 500) — the endpoint itself is unstable, not cleanly gated by whether the search term matches Hyperpure's catalogue.</p>
+    <p>Checked field-by-field against Hyperpure's own "HP↔External POS integration" API document:</p>
+    <ul>
+      <li>Path, method (GET), headers, and both query params (<code>outlet_id</code>, <code>search_query</code>) match the doc's field table exactly. One real gap found and fixed: <code>search_query</code> was configured <code>required=False</code>; the doc marks it mandatory.</li>
+      <li>The error body received — <code>{"error": {"code": "BAD_REQUEST_ERROR", "data": null, "message": "Something went wrong"}}</code> — matches the doc's own <b>"Generic system errors"</b> example verbatim (§4.8.8): schema-level rejection before field validation, no entity detail, "may ask the user to retry after some time."</li>
+      <li>The doc's <b>Test Credentials</b> section confirms <code>account_id 194841</code> is genuinely Hyperpure's designated test account (exact match) — but states outlet/product catalogue mappings for test outlets must be <b>manually provisioned by Hyperpure's own tech team</b> on request.</li>
+    </ul>
+    <div class="callout">
+      <b>Conclusion and next action</b>
+      Request construction is clean against the documented contract — nothing left to fix on our side for this endpoint. The likeliest cause is that outlet <code>802249</code> is active enough to accept real orders but was never fully provisioned with a searchable product catalogue on Hyperpure's backend. Action needed (not yet sent): email <code>integrations@hyperpure.com</code> with account 194841 + outlet 802249, confirming the request matches their own documented contract, and asking them to verify/complete catalogue provisioning for search specifically.
+    </div>
+  </section>
+
+  <section id="decisions">
+    <h2>10. Design decisions and alternatives ruled out</h2>
+    <ul>
+      <li><b>One shared review/apply wizard for both E-Transfer and Sync Vendor Prices</b> — adopted over two separate wizards, since both are fundamentally "preview a price comparison, then commit" flows differing only in what gets written on Apply.</li>
+      <li><b>CSV/reference-dataset price cache (<code>connect.partner.reference.dataset</code> for prices)</b> — removed entirely in favour of writing synced prices directly onto <code>product.supplierinfo</code>. Kept the file-backed dataset mechanism itself (still used for outlet and item mapping) but dropped the price-specific fields (<code>connect_price_dataset_id</code> and its column configuration) since a live-synced native pricelist row supersedes a separately cached file.</li>
+      <li><b>Sending <code>delivery_date</code>/computing a guessed delivery slot</b> — rejected: Hyperpure's own Target Delivery Date is authoritative and shifts over time; a mismatched guess gets the whole order rejected. Left optional and vendor/human-driven instead.</li>
+      <li><b><code>validate_order_placement</code> pre-flight step</b> — deliberately skipped in favour of relying on <code>place_order</code> alone; settled, not revisited.</li>
+      <li><b>A rotating JWT Bearer token for Hyperpure auth</b> — an earlier assumption, corrected this session after checking live <code>connect.endpoint.param</code> config directly: Hyperpure's actual auth is <code>otp_token_exchange</code>, with static per-request headers (<code>ApiAccessKey</code>/<code>ClientSecret</code>/<code>X-AccountId</code>), not a refreshed Bearer token.</li>
+    </ul>
+  </section>
+
+  <section id="limitations">
+    <h2>11. Known limitations / open items</h2>
+    <ul>
+      <li><b><code>search_products</code> outage</b> (§9) — blocks live price lookups everywhere they're used. Not yet reported to Hyperpure despite being flagged repeatedly.</li>
+      <li><b>IP whitelisting</b> (§9) — blocks all outbound calls once this runs on odoo.sh production.</li>
+      <li><b>BLR/MH/NCR have zero vendor product codes mapped</b> — 488 of 622 total supplierinfo rows across the four entities have no code at all, so Sync Vendor Prices produces nothing for those three entities regardless of the search_products outage being resolved.</li>
+      <li><b><code>VIJ</code>/<code>WH</code> warehouses unmapped to any GST entity</b> — needs user/Hyperpure input.</li>
+      <li><b>Price drift, unresolved</b> (§5) — PO's stored price vs. the currently-synced vendor price can disagree; no decision yet on whether E-Transfer should substitute the live value.</li>
+      <li><b>Webhook header-secret check not yet enabled</b> (§6) — the URL token is the only active gate today; enable the header check once Hyperpure provides their real secret value.</li>
+      <li><b><code>share_external_order_reference_details</code> must be explicitly requested from Hyperpure</b> during webhook setup, or <code>external_order_id</code> won't be present in their payload at all — breaks <code>PurchaseOrderUpdateProcessor</code>'s correlation entirely if missed.</li>
+      <li><b>QBP (quantity-based pricing slabs)</b> exists in Hyperpure's own pricing model; <code>search_products</code>'s <code>MarketPrice</code> is pre-QBP and nothing here slab-adjusts it. Flagged as a possible secondary contributor to past price-mismatch rejections, not confirmed.</li>
+    </ul>
+  </section>
+
+  <section id="schema">
+    <h2>12. Full schema reference</h2>
+    <table>
+      <thead><tr><th>Table</th><th>Change</th></tr></thead>
+      <tbody>
+        <tr><td><code>purchase_order</code></td><td>+ <code>vendor_order_sent</code>, <code>vendor_order_id</code>, <code>vendor_order_number</code>, <code>vendor_order_status</code>, <code>vendor_orders</code> (JSON), <code>vendor_transfer_state</code>, <code>vendor_transfer_message</code>, <code>vendor_submission_outlet_ref</code>, <code>connect_outlet_ref</code> (FK <code>connect_partner_outlet</code>), <code>connect_delivery_slot</code></td></tr>
+        <tr><td><code>purchase_order_line</code></td><td>computed-only: <code>connect_vendor_product_code</code>, <code>connect_vendor_price</code> (not stored)</td></tr>
+        <tr><td><code>product_supplierinfo</code></td><td><code>mail.thread</code> added; <code>price</code>/<code>product_code</code> now <code>tracking=True</code></td></tr>
+        <tr><td><code>connect_partner_outlet</code></td><td>new — materialized outlet-dataset rows, one per real vendor outlet, per dataset</td></tr>
+        <tr><td><code>connect_order_confirm_wizard</code> / <code>_line</code></td><td>transient — the shared review/apply wizard and its per-product/per-line rows</td></tr>
+        <tr><td><code>res_partner</code></td><td>+ <code>connect_partner_id</code>, endpoint binding fields (<code>connect_price_endpoint_id</code>, <code>connect_validate_endpoint_id</code>, <code>connect_place_endpoint_id</code>, <code>connect_cancel_endpoint_id</code>, <code>connect_webhook_endpoint_id</code>), dataset fields (<code>connect_outlet_dataset_id</code>, <code>connect_item_dataset_id</code>, <code>connect_status_dataset_id</code> + column config), <code>connect_units_confirmed</code>, <code>connect_price_currency_id</code></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer>
+    Internal implementation reference — Harleys Odoo 19 Enterprise. Click any screenshot to view it enlarged and step through the rest. Looking for a non-technical walkthrough instead? See the <a href="user-guide.html">User Guide</a>.
+  </footer>
+
+</div>
+<script type="module" src="../assets/scripts/main.js"></script>
+</body>
+</html>

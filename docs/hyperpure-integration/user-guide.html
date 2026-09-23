@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hyperpure Orders — Guide for Purchase Managers</title>
+<link rel="stylesheet" href="../assets/styles/main.css">
+</head>
+<body>
+<div class="page">
+
+  <a class="back-link" href="../index.html">&larr; Back to documentation home</a>
+
+  <header class="doc-head">
+    <p class="eyebrow">User Guide — Harleys Odoo 19 Enterprise</p>
+    <h1>Sending Purchase Orders to Hyperpure</h1>
+    <p class="dek">How to send an approved Purchase Order straight to Hyperpure from within Odoo, what the price review screen is telling you, how vendor status updates show up automatically afterwards, and how to keep vendor pricing up to date.</p>
+    <div class="meta">
+      <span><b>Audience</b> Purchase managers and buyers working with Hyperpure orders</span>
+      <span><b>Reading time</b> ~6 minutes</span>
+    </div>
+  </header>
+
+  <nav class="toc">
+    <b>Contents</b>
+    <ol>
+      <li><a href="#what">What this does</a></li>
+      <li><a href="#sending">Sending a Purchase Order to Hyperpure</a></li>
+      <li><a href="#review">Understanding the price review screen</a></li>
+      <li><a href="#after">After sending: how status updates arrive</a></li>
+      <li><a href="#pricesync">Keeping vendor prices up to date</a></li>
+      <li><a href="#faq">Common questions</a></li>
+    </ol>
+  </nav>
+
+  <section id="what">
+    <h2>1. What this does</h2>
+    <p>Once a Purchase Order for Hyperpure is approved in Odoo, it can be sent to Hyperpure directly from the PO itself — no re-typing it into Hyperpure's own ordering system. Hyperpure double-checks the prices and quantities, places the order on their side, and then sends progress updates (dispatched, delivered, etc.) back into the same PO automatically as they happen.</p>
+    <p>This currently works for outlets under Hyperpure's Hyderabad (Telangana) GST entity, with three more GST entities (Bangalore, Mumbai, NCR) partly set up and pending further vendor-side setup.</p>
+  </section>
+
+  <section id="sending">
+    <h2>2. Sending a Purchase Order to Hyperpure</h2>
+    <ol>
+      <li>Approve the Purchase Order as usual.</li>
+      <li>Click <b>Send to Vendor</b> on the PO. (This button only appears for vendors set up with a Hyperpure connection.)</li>
+      <li>A review screen opens — see <a href="#review">§3</a> for how to read it.</li>
+      <li>If everything looks right, confirm to send. Hyperpure validates the order and places it; you'll see an acknowledgement message on the PO once that's done.</li>
+    </ol>
+    <div class="callout">
+      <b>Delivery date and delivery slot</b>
+      Hyperpure decides the actual delivery date on their own side — it isn't something Odoo sends across. If you know the specific delivery window Hyperpure has assigned this order (e.g. "9 am – 11 am"), you can enter it in the PO's <b>Delivery Slot</b> field before sending. Leave it blank unless you're sure — a slot that doesn't match what Hyperpure would otherwise assign can get the whole order rejected.
+    </div>
+  </section>
+
+  <section id="review">
+    <h2>3. Understanding the price review screen</h2>
+    <p>Before anything is sent, you'll see a line-by-line comparison: the price currently on your Purchase Order next to Hyperpure's own reference price for that product. This is your chance to catch a mismatch before Hyperpure rejects the whole order for it.</p>
+    <ul>
+      <li><b>Prices match</b> — nothing to do, proceed to send.</li>
+      <li><b>Prices don't match</b> — the line is flagged. A Purchase Manager can choose to accept Hyperpure's price for that specific line and resend, rather than the order failing outright.</li>
+    </ul>
+    <p>If Hyperpure still rejects an order after sending, the message shown is Hyperpure's own plain-language explanation where available (e.g. <i>"RE PAPER STRAWS 6MM: Price difference between actual price and price entered by user is less than lower threshold..."</i>) rather than a generic technical error — so you know exactly which product and why.</p>
+  </section>
+
+  <section id="after">
+    <h2>4. After sending: how status updates arrive</h2>
+    <p>Once an order is placed, Hyperpure sends progress updates back automatically — you don't need to check their portal separately. These show up in two places on the PO:</p>
+    <ul>
+      <li>The <b>Vendor Orders</b> summary field — the current status per vendor order reference (Placed, Dispatched, Delivered, Cancelled, or Partial if an order was split and its parts don't all agree yet).</li>
+      <li>The chatter (activity log) at the bottom of the PO — a note for <i>every</i> update Hyperpure sends, so you can see the full history, not just the latest state.</li>
+    </ul>
+    <div class="callout">
+      <b>Sending a PO to Hyperpure is not the same as receiving stock</b>
+      These vendor status updates track what's happening on Hyperpure's side. They don't automatically create a stock receipt or a vendor bill — you still confirm the actual delivery in Odoo the normal way once goods arrive.
+    </div>
+    <p>If Hyperpure needs to cancel their side of an order, use <b>Request Cancellation</b> on the PO (only available while the vendor order is still in Placed status and hasn't shipped) — this asks Hyperpure to cancel; the PO reflects their confirmation once it comes back.</p>
+  </section>
+
+  <section id="pricesync">
+    <h2>5. Keeping vendor prices up to date</h2>
+    <p>Hyperpure's agreed prices are periodic, not looked up fresh on every single order. To pull their latest prices into Odoo's own vendor pricelist:</p>
+    <ol>
+      <li>Open the vendor's contact record.</li>
+      <li>Click <b>Sync Vendor Prices</b> (Purchase Managers only).</li>
+      <li>Odoo checks the current live price for every product it has a Hyperpure mapping for, and shows it next to the price already on file.</li>
+      <li>Click <b>Apply to Vendor Pricelist</b> to write the new prices in. Only the products that were successfully checked get updated — anything not yet mapped to a Hyperpure product code is simply left as-is and called out separately, it won't block the rest from updating.</li>
+    </ol>
+    <div class="callout">
+      <b>This does not touch existing Purchase Orders</b>
+      Syncing prices updates the vendor pricelist that <i>future</i> orders will use. A PO that's already been created keeps its own price until someone edits it directly.
+    </div>
+  </section>
+
+  <section id="faq">
+    <h2>6. Common questions</h2>
+    <p><b>Why can't I select an outlet for some of our locations?</b><br>
+    Only outlets that have been mapped to Hyperpure's system can be selected on a PO. Not every Harleys location is mapped yet for every Hyperpure GST entity — check with IT/Purchase administration if a location you expect to see is missing.</p>
+    <p><b>Why did "Sync Vendor Prices" only update a few products?</b><br>
+    Only products with a Hyperpure product code on file can be price-checked. Products without one yet are shown but left unchanged — this is expected while more products are still being mapped, not an error.</p>
+    <p><b>I sent an order and it's been a while with no status update — is that normal?</b><br>
+    Status updates depend on Hyperpure actually sending them. If a PO has sat in "Submitted" for an unusually long time with no chatter activity, check with IT — there can be gaps in Hyperpure's own vendor catalogue setup that are still being resolved on their side.</p>
+  </section>
+
+  <footer>
+    Internal user guide — Harleys Odoo 19 Enterprise. Looking for the technical implementation details instead? See the <a href="developer-guide.html">Developer Guide</a>.
+  </footer>
+
+</div>
+<script type="module" src="../assets/scripts/main.js"></script>
+</body>
+</html>

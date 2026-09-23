@@ -1,0 +1,834 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>POS Repository Schema</title>
+<meta name="description" content="How Rista data flows into Odoo, the full column-level ER diagram, and portable DBML for the POS Repository tables.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #faf9f5; --surface: #ffffff; --surface-2: #f1efe7; --ink: #1b1e23; --ink-muted: #5b6270;
+    --border: #dcd8cd; --accent: #2c5f8a; --accent-soft: #dde8f0; --hub: #9c5a22; --hub-soft: #f2e5d5;
+    --ext: #3e7a5c; --ext-soft: #e0ece5; --warn: #a13f3f; --warn-soft: #f2e0e0; --muted-line: #b9b3a5;
+    --code-bg: #efece2; --shadow: 0 1px 2px rgba(27,30,35,0.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15171b; --surface: #1c1f25; --surface-2: #21252c; --ink: #e8e6dd; --ink-muted: #9aa0ab;
+      --border: #34383f; --accent: #7fb0dd; --accent-soft: #22323f; --hub: #dda36c; --hub-soft: #3a2e20;
+      --ext: #7fc79f; --ext-soft: #1f2e26; --warn: #e0a0a0; --warn-soft: #3a2323; --muted-line: #565b64;
+      --code-bg: #23262d; --shadow: 0 1px 2px rgba(0,0,0,0.4);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #15171b; --surface: #1c1f25; --surface-2: #21252c; --ink: #e8e6dd; --ink-muted: #9aa0ab;
+    --border: #34383f; --accent: #7fb0dd; --accent-soft: #22323f; --hub: #dda36c; --hub-soft: #3a2e20;
+    --ext: #7fc79f; --ext-soft: #1f2e26; --warn: #e0a0a0; --warn-soft: #3a2323; --muted-line: #565b64;
+    --code-bg: #23262d; --shadow: 0 1px 2px rgba(0,0,0,0.4);
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--ink); font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 15px; line-height: 1.55; margin: 0; padding: 40px 16px 80px; }
+  main { max-width: 1080px; margin: 0 auto; }
+  h1, h2, h3 { font-family: "Source Serif 4", Georgia, serif; font-weight: 600; line-height: 1.2; text-wrap: balance; margin: 0 0 8px; }
+  h1 { font-size: 30px; letter-spacing: -0.01em; }
+  h2 { font-size: 21px; margin-top: 56px; padding-top: 8px; border-top: 1px solid var(--border); }
+  h3 { font-size: 15px; font-family: "IBM Plex Sans", sans-serif; font-weight: 600; }
+  .kicker { font-family: "IBM Plex Mono", monospace; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); margin-bottom: 10px; }
+  .lede { color: var(--ink-muted); font-size: 16px; max-width: 74ch; }
+  code, .mono { font-family: "IBM Plex Mono", monospace; font-size: 0.9em; }
+  code { background: var(--code-bg); padding: 0.1em 0.4em; border-radius: 4px; }
+  figure { margin: 24px 0 8px; }
+  figure svg { display: block; width: 100%; height: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); }
+  figcaption { font-size: 13px; color: var(--ink-muted); margin-top: 10px; max-width: 78ch; }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px 22px; margin: 14px 0 0; font-size: 12.5px; color: var(--ink-muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 7px; }
+  .swatch { width: 12px; height: 12px; border-radius: 3px; flex: none; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-top: 18px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; box-shadow: var(--shadow); }
+  .card .model { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; color: var(--accent); display: block; margin-bottom: 6px; word-break: break-word; }
+  .card .count { float: right; font-size: 11px; color: var(--ink-muted); font-weight: 400; }
+  .card ul { margin: 8px 0 0; padding-left: 18px; }
+  .card li { margin: 3px 0; font-size: 13.5px; }
+  .card .fk { color: var(--ink-muted); }
+  .badge { display: inline-block; font-size: 10.5px; font-family: "IBM Plex Mono", monospace; text-transform: uppercase; letter-spacing: 0.04em; padding: 2px 7px; border-radius: 5px; margin-left: 6px; vertical-align: middle; }
+  .badge.hub { background: var(--hub-soft); color: var(--hub); }
+  .badge.ext { background: var(--ext-soft); color: var(--ext); }
+  .badge.pending { background: var(--warn-soft); color: var(--warn); }
+  .callout { background: var(--surface-2); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 18px 0; font-size: 14px; }
+  .callout.pending { border-left-color: var(--warn); }
+  .callout h3 { margin-bottom: 6px; }
+  .callout p { margin: 6px 0; }
+  table.ref { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 14px; }
+  table.ref th, table.ref td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  table.ref th { color: var(--ink-muted); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; }
+  table.ref tr:last-child td { border-bottom: none; }
+  table.ref td.mono.ok { color: var(--ext); }
+  table.ref td.mono.pending { color: var(--warn); }
+  pre.dbml { background: var(--code-bg); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; overflow-x: auto; font-size: 12px; line-height: 1.6; margin-top: 14px; }
+  pre.dbml code { background: none; padding: 0; }
+  .foot { margin-top: 60px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 12.5px; color: var(--ink-muted); }
+  .back-link { display: inline-block; margin: 0 auto; max-width: 1080px; padding: 0 16px; font-family: "IBM Plex Mono", monospace; font-size: 13px; color: var(--accent); text-decoration: none; }
+  .back-link-row { display: flex; justify-content: center; padding-top: 24px; }
+</style>
+
+<div class="back-link-row"><a class="back-link" href="developer-guide.html">&larr; Back to Rista Integration guide</a></div>
+<main>
+
+  <div class="kicker">harleys_pos_repository &middot; rista integration &middot; 19.0.3.19.0 &middot; live</div>
+  <h1>POS Repository schema, column-level ER diagram, and DBML</h1>
+  <p class="lede">Six tables under <code>pos_repository_rista_*</code> hold everything pulled from Rista.
+  Three are typed reports (Sale, Sold-Out, Outlet Status); two are small master tables those reports
+  join against (Outlet Master, Item). The <code>registry &rarr; repository</code> rename is fully live
+  &mdash; module folder, model names, table names, sequences, security xmlids and the config key all
+  match the code below, verified against real production data. This revision also folds in the
+  response-layout work that followed: a proper missing-vs-zero tracking mechanism, stable line IDs
+  across re-pulls, and a new Sales Detail screen.</p>
+
+  <div class="callout">
+    <h3>What changed since the rename: the missing-vs-zero problem, solved</h3>
+    <p><code>missing_numbers</code> (new on both Sale and Sale Line) records, at upsert time and before
+    any zero-fallback, which numeric fields Rista's response genuinely omitted versus sent as an explicit
+    <code>0</code>. The stored Float itself always stays a real number (so pivots/sums keep working), but
+    the UI and CSV/XLSX export both blank the cell wherever it's flagged missing &mdash; the first time
+    this schema can tell "Rista didn't send this" apart from "Rista sent zero." <code>round_off_amount</code>
+    is back on the header (dropped in 18.0, restored here) using this exact mechanism: every row synced
+    before the restore is honestly marked unknown rather than shown as a fake <code>0</code>, and only
+    clears once that invoice is re-pulled. Line upserts also changed from delete-and-recreate to
+    match-by-<code>item_number</code>-and-update-in-place, so a line's Odoo id now survives a re-pull.</p>
+  </div>
+
+  <h2>1 &mdash; Data flow: one pull, start to finish</h2>
+  <figure>
+    <svg viewBox="0 0 1000 930" role="img" aria-label="Flow diagram: Rista API to connect.job to connect.manager to a typed-projection decision, branching into three processors, each writing its own table, syncing Outlet Master and Item along the way, and landing in Rista Reports.">
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+      <g font-family="IBM Plex Mono, monospace" font-size="12.5" fill="currentColor">
+        <rect x="340" y="14" width="320" height="52" rx="8" fill="none" stroke="currentColor" stroke-dasharray="5 4"/>
+        <text x="500" y="45" text-anchor="middle" font-weight="500">Rista API</text>
+        <line x1="500" y1="66" x2="500" y2="100" stroke="currentColor" marker-end="url(#arrow)"/>
+        <text x="516" y="86" font-size="11.5" fill="var(--ink-muted)">GET, per branch, scheduled</text>
+        <rect x="300" y="100" width="400" height="66" rx="8" fill="var(--surface)" stroke="currentColor"/>
+        <text x="500" y="127" text-anchor="middle" font-weight="600">connect.job</text>
+        <text x="500" y="147" text-anchor="middle" font-size="11" fill="var(--ink-muted)">24h interval &middot; fans out over 73 branches &middot; pull_offset_days=2</text>
+        <line x1="500" y1="166" x2="500" y2="200" stroke="currentColor" marker-end="url(#arrow)"/>
+        <text x="516" y="186" font-size="11.5" fill="var(--ink-muted)">run_job() &rarr; execute()</text>
+        <rect x="300" y="200" width="400" height="60" rx="8" fill="var(--surface)" stroke="currentColor"/>
+        <text x="500" y="228" text-anchor="middle" font-weight="600">connect.manager</text>
+        <text x="500" y="246" text-anchor="middle" font-size="11" fill="var(--ink-muted)">signed-JWT auth &middot; pagination &middot; the one HTTP call</text>
+        <line x1="500" y1="260" x2="500" y2="296" stroke="currentColor" marker-end="url(#arrow)"/>
+        <text x="516" y="284" font-size="11.5" fill="var(--ink-muted)">_get_response_processor(endpoint)</text>
+        <polygon points="500,296 610,346 500,396 390,346" fill="var(--surface)" stroke="currentColor"/>
+        <text x="500" y="341" text-anchor="middle" font-size="11.5">typed projection</text>
+        <text x="500" y="356" text-anchor="middle" font-size="11.5">flag set?</text>
+        <line x1="610" y1="346" x2="760" y2="346" stroke="currentColor" marker-end="url(#arrow)"/>
+        <text x="628" y="338" font-size="11" fill="var(--ink-muted)">no</text>
+        <rect x="760" y="318" width="210" height="56" rx="8" fill="none" stroke="var(--warn)" stroke-dasharray="4 4"/>
+        <text x="865" y="342" text-anchor="middle" font-size="11" fill="var(--warn)">rejected &mdash;</text>
+        <text x="865" y="358" text-anchor="middle" font-size="11" fill="var(--warn)">no processor registered</text>
+        <line x1="500" y1="396" x2="500" y2="424" stroke="currentColor" marker-end="url(#arrow)"/>
+        <text x="516" y="416" font-size="11" fill="var(--ink-muted)">yes</text>
+        <line x1="500" y1="424" x2="150" y2="454" stroke="currentColor"/>
+        <line x1="500" y1="424" x2="500" y2="454" stroke="currentColor"/>
+        <line x1="500" y1="424" x2="850" y2="454" stroke="currentColor"/>
+        <line x1="150" y1="454" x2="150" y2="466" stroke="currentColor" marker-end="url(#arrow)"/>
+        <line x1="500" y1="454" x2="500" y2="466" stroke="currentColor" marker-end="url(#arrow)"/>
+        <line x1="850" y1="454" x2="850" y2="466" stroke="currentColor" marker-end="url(#arrow)"/>
+        <rect x="20" y="466" width="260" height="56" rx="8" fill="var(--accent-soft)" stroke="var(--accent)"/>
+        <text x="150" y="490" text-anchor="middle" fill="var(--accent)" font-weight="600" font-size="11.5">RistaSalesPageProcessor</text>
+        <text x="150" y="507" text-anchor="middle" fill="var(--accent)" font-size="10.5">pos_sales_projection</text>
+        <rect x="370" y="466" width="260" height="56" rx="8" fill="var(--accent-soft)" stroke="var(--accent)"/>
+        <text x="500" y="490" text-anchor="middle" fill="var(--accent)" font-weight="600" font-size="11.5">RistaSoldOutHistoryProcessor</text>
+        <text x="500" y="507" text-anchor="middle" fill="var(--accent)" font-size="10.5">pos_soldout_projection</text>
+        <rect x="720" y="466" width="260" height="56" rx="8" fill="var(--accent-soft)" stroke="var(--accent)"/>
+        <text x="850" y="490" text-anchor="middle" fill="var(--accent)" font-weight="600" font-size="11.5">RistaOutletStatusProcessor</text>
+        <text x="850" y="507" text-anchor="middle" fill="var(--accent)" font-size="10.5">pos_outlet_status_projection</text>
+        <line x1="150" y1="522" x2="150" y2="556" stroke="currentColor" marker-end="url(#arrow)"/>
+        <line x1="500" y1="522" x2="500" y2="556" stroke="currentColor" marker-end="url(#arrow)"/>
+        <line x1="850" y1="522" x2="850" y2="556" stroke="currentColor" marker-end="url(#arrow)"/>
+        <text x="150" y="544" text-anchor="middle" font-size="10.5" fill="var(--ink-muted)">.upsert()</text>
+        <text x="500" y="544" text-anchor="middle" font-size="10.5" fill="var(--ink-muted)">.upsert()</text>
+        <text x="850" y="544" text-anchor="middle" font-size="10.5" fill="var(--ink-muted)">.upsert()</text>
+        <rect x="20" y="556" width="260" height="56" rx="8" fill="var(--surface)" stroke="currentColor"/>
+        <text x="150" y="580" text-anchor="middle" font-size="11.5" font-weight="600">rista_sale</text>
+        <text x="150" y="597" text-anchor="middle" font-size="10.5" fill="var(--ink-muted)">+ _sale_line &middot; 134,309 rows</text>
+        <rect x="370" y="556" width="260" height="56" rx="8" fill="var(--surface)" stroke="currentColor"/>
+        <text x="500" y="580" text-anchor="middle" font-size="11.5" font-weight="600">rista_soldout</text>
+        <text x="500" y="597" text-anchor="middle" font-size="10.5" fill="var(--ink-muted)">21,508 rows</text>
+        <rect x="720" y="556" width="260" height="56" rx="8" fill="var(--surface)" stroke="currentColor"/>
+        <text x="850" y="580" text-anchor="middle" font-size="11.5" font-weight="600">rista_outlet_status</text>
+        <text x="850" y="597" text-anchor="middle" font-size="10.5" fill="var(--ink-muted)">230 rows</text>
+        <line x1="150" y1="612" x2="150" y2="630" stroke="currentColor"/>
+        <line x1="150" y1="630" x2="500" y2="656" stroke="currentColor" marker-end="url(#arrow)"/>
+        <line x1="500" y1="612" x2="500" y2="656" stroke="currentColor" marker-end="url(#arrow)"/>
+        <line x1="850" y1="612" x2="850" y2="630" stroke="currentColor"/>
+        <line x1="850" y1="630" x2="520" y2="656" stroke="currentColor" marker-end="url(#arrow)"/>
+        <text x="500" y="646" text-anchor="middle" font-size="10.5" fill="var(--ink-muted)">_sync() as a side effect &mdash; no separate pull</text>
+        <rect x="300" y="656" width="400" height="56" rx="8" fill="var(--hub-soft)" stroke="var(--hub)"/>
+        <text x="500" y="678" text-anchor="middle" fill="var(--hub)" font-weight="600" font-size="12">Outlet Master (73 branch &middot; 3 brand &middot; 3 source) &middot; Item (320)</text>
+        <text x="500" y="697" text-anchor="middle" fill="var(--hub)" font-size="10.5">matched or auto-created by code/name</text>
+        <line x1="150" y1="612" x2="150" y2="770" stroke="currentColor" marker-end="url(#arrow)"/>
+        <line x1="500" y1="612" x2="500" y2="770" stroke="currentColor" marker-end="url(#arrow)"/>
+        <line x1="850" y1="612" x2="850" y2="770" stroke="currentColor" marker-end="url(#arrow)"/>
+        <rect x="20" y="770" width="960" height="70" rx="8" fill="var(--ext-soft)" stroke="var(--ext)"/>
+        <text x="500" y="798" text-anchor="middle" fill="var(--ext)" font-weight="600" font-size="12.5">Rista Reports (5 live Odoo screens)</text>
+        <text x="500" y="818" text-anchor="middle" fill="var(--ext)" font-size="10.5">POS Orders &middot; POS Order Lines &middot; Sales Detail &middot; Sold Out History &middot; Outlet Status</text>
+        <text x="500" y="833" text-anchor="middle" fill="var(--ext)" font-size="10">gated by group_pos_repository_reports (view-only) or harleys_connect.group_connect_user (full)</text>
+        <text x="500" y="900" text-anchor="middle" font-size="11" fill="var(--ink-muted)">every pull endpoint needs a typed projection since 19.0.3.17.0 &mdash; the generic capture fallback was removed for good</text>
+      </g>
+    </svg>
+    <figcaption>One scheduled pull, traced end to end. The branch/item master rows are a side effect of
+    writing the report row, not a separate API call. Row counts as of the last live check.</figcaption>
+  </figure>
+
+  <h2>2 &mdash; Entity-relationship diagram (column level)</h2>
+  <figure>
+<svg viewBox="0 0 1420 791" role="img" aria-label="Entity relationship diagram of all six POS Repository tables with full column lists, primary and foreign keys, and their relationships to each other and to Odoo's own connect.partner, res.company, stock.warehouse and product.product.">
+<defs><marker id="erarrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+<g font-family="IBM Plex Mono, monospace" font-size="10.5">
+<g>
+<rect x="20" y="20" width="220" height="64" rx="6" fill="var(--surface)" stroke="var(--ext)" stroke-width="1.3"/>
+<path d="M20,50 v-24 q0,-6 6,-6 h208 q6,0 6,6 v24 z" fill="var(--ext-soft)"/>
+<text x="28" y="33" fill="var(--ext)" font-weight="700" font-size="11">connect.partner</text>
+<text x="28" y="45" fill="var(--ink-muted)" font-size="9">external · Connect</text>
+<text x="28" y="62" fill="currentColor" font-weight="700">id</text>
+<text x="232" y="62" text-anchor="end" fill="var(--hub)" font-size="9" font-weight="700">PK</text>
+<line x1="20" y1="67" x2="240" y2="67" stroke="var(--border)" stroke-width="0.6"/>
+<text x="28" y="79" fill="currentColor" font-weight="400">name</text>
+</g>
+<g>
+<rect x="20" y="125" width="220" height="64" rx="6" fill="var(--surface)" stroke="var(--ext)" stroke-width="1.3"/>
+<path d="M20,155 v-24 q0,-6 6,-6 h208 q6,0 6,6 v24 z" fill="var(--ext-soft)"/>
+<text x="28" y="138" fill="var(--ext)" font-weight="700" font-size="11">res.company</text>
+<text x="28" y="150" fill="var(--ink-muted)" font-size="9">external · Odoo</text>
+<text x="28" y="167" fill="currentColor" font-weight="700">id</text>
+<text x="232" y="167" text-anchor="end" fill="var(--hub)" font-size="9" font-weight="700">PK</text>
+<line x1="20" y1="172" x2="240" y2="172" stroke="var(--border)" stroke-width="0.6"/>
+<text x="28" y="184" fill="currentColor" font-weight="400">name</text>
+</g>
+<g>
+<rect x="20" y="230" width="220" height="81" rx="6" fill="var(--surface)" stroke="var(--ext)" stroke-width="1.3"/>
+<path d="M20,260 v-24 q0,-6 6,-6 h208 q6,0 6,6 v24 z" fill="var(--ext-soft)"/>
+<text x="28" y="243" fill="var(--ext)" font-weight="700" font-size="11">stock.warehouse</text>
+<text x="28" y="255" fill="var(--ink-muted)" font-size="9">external · Inventory</text>
+<text x="28" y="272" fill="currentColor" font-weight="700">id</text>
+<text x="232" y="272" text-anchor="end" fill="var(--hub)" font-size="9" font-weight="700">PK</text>
+<line x1="20" y1="277" x2="240" y2="277" stroke="var(--border)" stroke-width="0.6"/>
+<text x="28" y="289" fill="currentColor" font-weight="400">code</text>
+<line x1="20" y1="294" x2="240" y2="294" stroke="var(--border)" stroke-width="0.6"/>
+<text x="28" y="306" fill="currentColor" font-weight="400">name</text>
+</g>
+<g>
+<rect x="20" y="355" width="220" height="81" rx="6" fill="var(--surface)" stroke="var(--ext)" stroke-width="1.3"/>
+<path d="M20,385 v-24 q0,-6 6,-6 h208 q6,0 6,6 v24 z" fill="var(--ext-soft)"/>
+<text x="28" y="368" fill="var(--ext)" font-weight="700" font-size="11">product.product</text>
+<text x="28" y="380" fill="var(--ink-muted)" font-size="9">external · Sales</text>
+<text x="28" y="397" fill="currentColor" font-weight="700">id</text>
+<text x="232" y="397" text-anchor="end" fill="var(--hub)" font-size="9" font-weight="700">PK</text>
+<line x1="20" y1="402" x2="240" y2="402" stroke="var(--border)" stroke-width="0.6"/>
+<text x="28" y="414" fill="currentColor" font-weight="400">default_code</text>
+<line x1="20" y1="419" x2="240" y2="419" stroke="var(--border)" stroke-width="0.6"/>
+<text x="28" y="431" fill="currentColor" font-weight="400">name</text>
+</g>
+<g>
+<rect x="310" y="20" width="320" height="186" rx="6" fill="var(--surface)" stroke="var(--hub)" stroke-width="1.3"/>
+<path d="M310,50 v-24 q0,-6 6,-6 h308 q6,0 6,6 v24 z" fill="var(--hub-soft)"/>
+<text x="318" y="33" fill="var(--hub)" font-weight="700" font-size="11">pos_repository_rista_outlet_master</text>
+<text x="318" y="45" fill="var(--ink-muted)" font-size="9">Outlet Mapping · Brand List · Source List</text>
+<text x="318" y="62" fill="currentColor" font-weight="700">id</text>
+<text x="622" y="62" text-anchor="end" fill="var(--hub)" font-size="9" font-weight="700">PK</text>
+<line x1="310" y1="67" x2="630" y2="67" stroke="var(--border)" stroke-width="0.6"/>
+<text x="318" y="79" fill="currentColor" font-weight="400">partner_id</text>
+<text x="622" y="79" text-anchor="end" fill="var(--hub)" font-size="9" font-weight="700">FK</text>
+<text x="318" y="90" fill="var(--ink-muted)" font-size="8.3" font-style="italic">→ connect.partner</text>
+<line x1="310" y1="94" x2="630" y2="94" stroke="var(--border)" stroke-width="0.6"/>
+<text x="318" y="106" fill="currentColor" font-weight="400">lookup_type</text>
+<text x="318" y="117" fill="var(--ink-muted)" font-size="8.3" font-style="italic">branch / brand / source</text>
+<line x1="310" y1="121" x2="630" y2="121" stroke="var(--border)" stroke-width="0.6"/>
+<text x="318" y="133" fill="currentColor" font-weight="400">code</text>
+<text x="318" y="144" fill="var(--ink-muted)" font-size="8.3" font-style="italic">uniq(partner, type, code)</text>
+<line x1="310" y1="148" x2="630" y2="148" stroke="var(--border)" stroke-width="0.6"/>
+<text x="318" y="160" fill="currentColor" font-weight="400">name</text>
+<line x1="310" y1="165" x2="630" y2="165" stroke="var(--border)" stroke-width="0.6"/>
+<text x="318" y="177" fill="currentColor" font-weight="400">description</text>
+<line x1="310" y1="182" x2="630" y2="182" stroke="var(--border)" stroke-width="0.6"/>
+<text x="318" y="194" fill="currentColor" font-weight="400">warehouse_id</text>
+<text x="622" y="194" text-anchor="end" fill="var(--hub)" font-size="9" font-weight="700">FK</text>
+<text x="318" y="205" fill="var(--ink-muted)" font-size="8.3" font-style="italic">→ stock.warehouse · branch rows only</text>
+<line x1="310" y1="209" x2="630" y2="209" stroke="var(--border)" stroke-width="0.6"/>
+<text x="318" y="221" fill="currentColor" font-weight="400">warehouse_code</text>
+<text x="318" y="232" fill="var(--ink-muted)" font-size="8.3" font-style="italic">computed / inverse of warehouse_id</text>
+</g>
+<g>
+<rect x="310" y="300" width="320" height="152" rx="6" fill="var(--surface)" stroke="var(--hub)" stroke-width="1.3"/>
+<path d="M310,330 v-24 q0,-6 6,-6 h308 q6,0 6,6 v24 z" fill="var(--hub-soft)"/>
+<text x="318" y="313" fill="var(--hub)" font-weight="700" font-size="11">pos_repository_rista_item</text>
+<text x="318" y="325" fill="var(--ink-muted)" font-size="9">Item Mapping</text>
+<text x="318" y="342" fill="currentColor" font-weight="700">id</text>
+<text x="622" y="342" text-anchor="end" fill="var(--hub)" font-size="9" font-weight="700">PK</text>
+<line x1="310" y1="347" x2="630" y2="347" stroke="var(--border)" stroke-width="0.6"/>
+<text x="318" y="359" fill="currentColor" font-weight="400">partner_id</text>
+<text x="622" y="359" text-anchor="end" fill="var(--hub)" font-size="9" font-weight="700">FK</text>
+<text x="318" y="370" fill="var(--ink-muted)" font-size="8.3" font-style="italic">→ connect.partner</text>
+<line x1="310" y1="374" x2="630" y2="374" stroke="var(--border)" stroke-width="0.6"/>
+<text x="318" y="386" fill="currentColor" font-weight="400">code</text>
+<text x="318" y="397" fill="var(--ink-muted)" font-size="8.3" font-style="italic">uniq(partner, code) · Rista skuCode</text>
+<line x1="310" y1="401" x2="630" y2="401" stroke="var(--border)" stroke-width="0.6"/>
+<text x="318" y="413" fill="currentColor" font-weight="400">name</text>
+<line x1="310" y1="418" x2="630" y2="418" stroke="var(--border)" stroke-width="0.6"/>
+<text x="318" y="430" fill="currentColor" font-weight="400">product_id</text>
+<text x="622" y="430" text-anchor="end" fill="var(--hub)" font-size="9" font-weight="700">FK</text>
+<text x="318" y="441" fill="var(--ink-muted)" font-size="8.3" font-style="italic">→ product.product</text>
+<line x1="310" y1="445" x2="630" y2="445" stroke="var(--border)" stroke-width="0.6"/>
+<text x="318" y="457" fill="currentColor" font-weight="400">product_default_code</text>
+<text x="318" y="468" fill="var(--ink-muted)" font-size="8.3" font-style="italic">computed / inverse of product_id</text>
+</g>
+<g>
+<rect x="690" y="20" width="320" height="240" rx="6" fill="var(--surface)" stroke="currentColor" stroke-width="1.3"/>
+<path d="M690,50 v-24 q0,-6 6,-6 h308 q6,0 6,6 v24 z" fill="var(--surface-2)"/>
+<text x="698" y="33" fill="currentColor" font-weight="700" font-size="11">pos_repository_rista_soldout</text>
+<text x="698" y="45" fill="var(--ink-muted)" font-size="9">Sold Out History</text>
+<text x="698" y="62" fill="currentColor" font-weight="700">id</text>
+<text x="1002" y="62" text-anchor="end" fill="var(--hub)" font-size="9" font-weight="700">PK</text>
+<line x1="690" y1="67" x2="1010" y2="67" stroke="var(--border)" stroke-width="0.6"/>
+<text x="698" y="79" fill="currentColor" font-weight="400">partner_id</text>
+<text x="1002" y="79" text-anchor="end" fill="currentColor" font-size="9" font-weight="700">FK</text>
+<text x="698" y="90" fill="var(--ink-muted)" font-size="8.3" font-style="italic">→ connect.partner</text>
+<line x1="690" y1="94" x2="1010" y2="94" stroke="var(--border)" stroke-width="0.6"/>
+<text x="698" y="106" fill="currentColor" font-weight="400">company_id</text>
+<text x="1002" y="106" text-anchor="end" fill="currentColor" font-size="9" font-weight="700">FK</text>
+<text x="698" y="117" fill="var(--ink-muted)" font-size="8.3" font-style="italic">→ res.company</text>
+<line x1="690" y1="121" x2="1010" y2="121" stroke="var(--border)" stroke-width="0.6"/>
+<text x="698" y="133" fill="currentColor" font-weight="400">branch_id</text>
+<text x="1002" y="133" text-anchor="end" fill="currentColor" font-size="9" font-weight="700">FK</text>
+<text x="698" y="144" fill="var(--ink-muted)" font-size="8.3" font-style="italic">→ outlet.master (branch)</text>
+<line x1="690" y1="148" x2="1010" y2="148" stroke="var(--border)" stroke-width="0.6"/>
+<text x="698" y="160" fill="currentColor" font-weight="400">item_id</text>
+<text x="1002" y="160" text-anchor="end" fill="currentColor" font-size="9" font-weight="700">FK</text>
+<text x="698" y="171" fill="var(--ink-muted)" font-size="8.3" font-style="italic">→ item</text>
+<line x1="690" y1="175" x2="1010" y2="175" stroke="var(--border)" stroke-width="0.6"/>
+<text x="698" y="187" fill="currentColor" font-weight="400">sku_code, item_name</text>
+<line x1="690" y1="192" x2="1010" y2="192" stroke="var(--border)" stroke-width="0.6"/>
+<text x="698" y="204" fill="currentColor" font-weight="400">status_type, event_type</text>
+<text x="698" y="215" fill="var(--ink-muted)" font-size="8.3" font-style="italic">SOLD_OUT/AVAILABLE · IN/OUT</text>
+<line x1="690" y1="219" x2="1010" y2="219" stroke="var(--border)" stroke-width="0.6"/>
+<text x="698" y="231" fill="currentColor" font-weight="400">event_date, event_business_day</text>
+<line x1="690" y1="236" x2="1010" y2="236" stroke="var(--border)" stroke-width="0.6"/>
+<text x="698" y="248" fill="currentColor" font-weight="400">event_key</text>
+<text x="1002" y="248" text-anchor="end" fill="currentColor" font-size="9" font-weight="700">uniq</text>
+<text x="698" y="259" fill="var(--ink-muted)" font-size="8.3" font-style="italic">sha256 of the endpoint's identity fields</text>
+<line x1="690" y1="263" x2="1010" y2="263" stroke="var(--border)" stroke-width="0.6"/>
+<text x="698" y="275" fill="currentColor" font-weight="400">+5 more</text>
+<text x="1002" y="275" text-anchor="end" fill="currentColor" font-size="9" font-weight="700">…</text>
+<text x="698" y="286" fill="var(--ink-muted)" font-size="8.3" font-style="italic">branch_code/name, measuring_unit, category_name/types, item_type, user_name/id</text>
+</g>
+<g>
+<rect x="690" y="380" width="320" height="213" rx="6" fill="var(--surface)" stroke="currentColor" stroke-width="1.3"/>
+<path d="M690,410 v-24 q0,-6 6,-6 h308 q6,0 6,6 v24 z" fill="var(--surface-2)"/>
+<text x="698" y="393" fill="currentColor" font-weight="700" font-size="11">pos_repository_rista_outlet_status</text>
+<text x="698" y="405" fill="var(--ink-muted)" font-size="9">Outlet Status (live snapshot)</text>
+<text x="698" y="422" fill="currentColor" font-weight="700">id</text>
+<text x="1002" y="422" text-anchor="end" fill="var(--hub)" font-size="9" font-weight="700">PK</text>
+<line x1="690" y1="427" x2="1010" y2="427" stroke="var(--border)" stroke-width="0.6"/>
+<text x="698" y="439" fill="currentColor" font-weight="400">partner_id</text>
+<text x="1002" y="439" text-anchor="end" fill="currentColor" font-size="9" font-weight="700">FK</text>
+<text x="698" y="450" fill="var(--ink-muted)" font-size="8.3" font-style="italic">→ connect.partner</text>
+<line x1="690" y1="454" x2="1010" y2="454" stroke="var(--border)" stroke-width="0.6"/>
+<text x="698" y="466" fill="currentColor" font-weight="400">company_id</text>
+<text x="1002" y="466" text-anchor="end" fill="currentColor" font-size="9" font-weight="700">FK</text>
+<text x="698" y="477" fill="var(--ink-muted)" font-size="8.3" font-style="italic">→ res.company</text>
+<line x1="690" y1="481" x2="1010" y2="481" stroke="var(--border)" stroke-width="0.6"/>
+<text x="698" y="493" fill="currentColor" font-weight="400">branch_id</text>
+<text x="1002" y="493" text-anchor="end" fill="currentColor" font-size="9" font-weight="700">FK</text>
+<text x="698" y="504" fill="var(--ink-muted)" font-size="8.3" font-style="italic">→ outlet.master (branch)</text>
+<line x1="690" y1="508" x2="1010" y2="508" stroke="var(--border)" stroke-width="0.6"/>
+<text x="698" y="520" fill="currentColor" font-weight="400">branch_code, branch_name</text>
+<line x1="690" y1="525" x2="1010" y2="525" stroke="var(--border)" stroke-width="0.6"/>
+<text x="698" y="537" fill="currentColor" font-weight="400">channel</text>
+<line x1="690" y1="542" x2="1010" y2="542" stroke="var(--border)" stroke-width="0.6"/>
+<text x="698" y="554" fill="currentColor" font-weight="400">order_source</text>
+<text x="1002" y="554" text-anchor="end" fill="currentColor" font-size="9" font-weight="700">uniq*</text>
+<text x="698" y="565" fill="var(--ink-muted)" font-size="8.3" font-style="italic">*with partner, branch_code, channel</text>
+<line x1="690" y1="569" x2="1010" y2="569" stroke="var(--border)" stroke-width="0.6"/>
+<text x="698" y="581" fill="currentColor" font-weight="400">report_date</text>
+<line x1="690" y1="586" x2="1010" y2="586" stroke="var(--border)" stroke-width="0.6"/>
+<text x="698" y="598" fill="currentColor" font-weight="400">status_value</text>
+<text x="698" y="609" fill="var(--ink-muted)" font-size="8.3" font-style="italic">Rista sends 'status', sheet names it 'statusValue'</text>
+</g>
+<g>
+<rect x="1060" y="20" width="340" height="376" rx="6" fill="var(--surface)" stroke="currentColor" stroke-width="1.3"/>
+<path d="M1060,50 v-24 q0,-6 6,-6 h328 q6,0 6,6 v24 z" fill="var(--surface-2)"/>
+<text x="1068" y="33" fill="currentColor" font-weight="700" font-size="11">pos_repository_rista_sale</text>
+<text x="1068" y="45" fill="var(--ink-muted)" font-size="9">POS Orders</text>
+<text x="1068" y="62" fill="currentColor" font-weight="700">id</text>
+<text x="1392" y="62" text-anchor="end" fill="var(--hub)" font-size="9" font-weight="700">PK</text>
+<line x1="1060" y1="67" x2="1400" y2="67" stroke="var(--border)" stroke-width="0.6"/>
+<text x="1068" y="79" fill="currentColor" font-weight="400">partner_id</text>
+<text x="1392" y="79" text-anchor="end" fill="currentColor" font-size="9" font-weight="700">FK</text>
+<text x="1068" y="90" fill="var(--ink-muted)" font-size="8.3" font-style="italic">→ connect.partner</text>
+<line x1="1060" y1="94" x2="1400" y2="94" stroke="var(--border)" stroke-width="0.6"/>
+<text x="1068" y="106" fill="currentColor" font-weight="400">company_id</text>
+<text x="1392" y="106" text-anchor="end" fill="currentColor" font-size="9" font-weight="700">FK</text>
+<text x="1068" y="117" fill="var(--ink-muted)" font-size="8.3" font-style="italic">→ res.company</text>
+<line x1="1060" y1="121" x2="1400" y2="121" stroke="var(--border)" stroke-width="0.6"/>
+<text x="1068" y="133" fill="currentColor" font-weight="400">invoice_number</text>
+<text x="1392" y="133" text-anchor="end" fill="currentColor" font-size="9" font-weight="700">uniq*</text>
+<text x="1068" y="144" fill="var(--ink-muted)" font-size="8.3" font-style="italic">*with partner_id</text>
+<line x1="1060" y1="148" x2="1400" y2="148" stroke="var(--border)" stroke-width="0.6"/>
+<text x="1068" y="160" fill="currentColor" font-weight="400">branch_id, brand_id, source_id</text>
+<text x="1392" y="160" text-anchor="end" fill="currentColor" font-size="9" font-weight="700">FK ×3</text>
+<text x="1068" y="171" fill="var(--ink-muted)" font-size="8.3" font-style="italic">→ outlet.master (branch/brand/source)</text>
+<line x1="1060" y1="175" x2="1400" y2="175" stroke="var(--border)" stroke-width="0.6"/>
+<text x="1068" y="187" fill="currentColor" font-weight="400">branch_code, branch_name</text>
+<line x1="1060" y1="192" x2="1400" y2="192" stroke="var(--border)" stroke-width="0.6"/>
+<text x="1068" y="204" fill="currentColor" font-weight="400">invoice_date/day, created_time, modified_time</text>
+<text x="1068" y="215" fill="var(--ink-muted)" font-size="8.3" font-style="italic">4 fields</text>
+<line x1="1060" y1="219" x2="1400" y2="219" stroke="var(--border)" stroke-width="0.6"/>
+<text x="1068" y="231" fill="currentColor" font-weight="400">status, fulfillment_status, invoice_type, channel, sale_by, note</text>
+<text x="1068" y="242" fill="var(--ink-muted)" font-size="8.3" font-style="italic">6 fields</text>
+<line x1="1060" y1="246" x2="1400" y2="246" stroke="var(--border)" stroke-width="0.6"/>
+<text x="1068" y="258" fill="currentColor" font-weight="400">missing_numbers</text>
+<text x="1392" y="258" text-anchor="end" fill="currentColor" font-size="9" font-weight="700">19.19</text>
+<text x="1068" y="269" fill="var(--ink-muted)" font-size="8.3" font-style="italic">which numeric fields were truly absent vs sent-as-zero, this pull</text>
+<line x1="1060" y1="273" x2="1400" y2="273" stroke="var(--border)" stroke-width="0.6"/>
+<text x="1068" y="285" fill="currentColor" font-weight="400">discount_amount</text>
+<text x="1068" y="296" fill="var(--ink-muted)" font-size="8.3" font-style="italic">"Invoice Total Discount" ← totalDiscountAmount only, no fallback</text>
+<line x1="1060" y1="300" x2="1400" y2="300" stroke="var(--border)" stroke-width="0.6"/>
+<text x="1068" y="312" fill="currentColor" font-weight="400">gross/net_discount/tax/net/net_charge/balance/round_off + CGST/SGST amt+%</text>
+<text x="1068" y="323" fill="var(--ink-muted)" font-size="8.3" font-style="italic">11 amount/tax fields (Float)</text>
+<line x1="1060" y1="327" x2="1400" y2="327" stroke="var(--border)" stroke-width="0.6"/>
+<text x="1068" y="339" fill="currentColor" font-weight="400">packaging_charges, payment_mode, payment_date</text>
+<text x="1068" y="350" fill="var(--ink-muted)" font-size="8.3" font-style="italic">3 fields</text>
+<line x1="1060" y1="354" x2="1400" y2="354" stroke="var(--border)" stroke-width="0.6"/>
+<text x="1068" y="366" fill="currentColor" font-weight="400">delivery_channel/date/by_name/by_phone</text>
+<text x="1068" y="377" fill="var(--ink-muted)" font-size="8.3" font-style="italic">4 fields</text>
+<line x1="1060" y1="381" x2="1400" y2="381" stroke="var(--border)" stroke-width="0.6"/>
+<text x="1068" y="393" fill="currentColor" font-weight="400">customer_name, customer_phone</text>
+<text x="1068" y="404" fill="var(--ink-muted)" font-size="8.3" font-style="italic">2 fields</text>
+<line x1="1060" y1="408" x2="1400" y2="408" stroke="var(--border)" stroke-width="0.6"/>
+<text x="1068" y="420" fill="currentColor" font-weight="400">accepted … voided … processed_attempt_time</text>
+<text x="1068" y="431" fill="var(--ink-muted)" font-size="8.3" font-style="italic">9 event-timeline fields (Datetime)</text>
+<line x1="1060" y1="435" x2="1400" y2="435" stroke="var(--border)" stroke-width="0.6"/>
+<text x="1068" y="447" fill="currentColor" font-weight="400">device_label, sale_by_user_id, person_count</text>
+<text x="1068" y="458" fill="var(--ink-muted)" font-size="8.3" font-style="italic">3 fields</text>
+<line x1="1060" y1="462" x2="1400" y2="462" stroke="var(--border)" stroke-width="0.6"/>
+<text x="1068" y="474" fill="currentColor" font-weight="400">status_reason/remarks, item_log_reason/updated_by/updated_time</text>
+<text x="1392" y="474" text-anchor="end" fill="currentColor" font-size="9" font-weight="700">18.0</text>
+<text x="1068" y="485" fill="var(--ink-muted)" font-size="8.3" font-style="italic">5 fields · contract, no live data yet</text>
+<line x1="1060" y1="489" x2="1400" y2="489" stroke="var(--border)" stroke-width="0.6"/>
+<text x="1068" y="501" fill="currentColor" font-weight="400">line_ids</text>
+<text x="1392" y="501" text-anchor="end" fill="currentColor" font-size="9" font-weight="700">O2M</text>
+<text x="1068" y="512" fill="var(--ink-muted)" font-size="8.3" font-style="italic">→ sale.line, 1:many</text>
+</g>
+<g>
+<rect x="1060" y="470" width="340" height="301" rx="6" fill="var(--surface)" stroke="currentColor" stroke-width="1.3"/>
+<path d="M1060,500 v-24 q0,-6 6,-6 h328 q6,0 6,6 v24 z" fill="var(--surface-2)"/>
+<text x="1068" y="483" fill="currentColor" font-weight="700" font-size="11">pos_repository_rista_sale_line</text>
+<text x="1068" y="495" fill="var(--ink-muted)" font-size="9">POS Order Lines · Sales Detail</text>
+<text x="1068" y="512" fill="currentColor" font-weight="700">id</text>
+<text x="1392" y="512" text-anchor="end" fill="var(--hub)" font-size="9" font-weight="700">PK</text>
+<line x1="1060" y1="517" x2="1400" y2="517" stroke="var(--border)" stroke-width="0.6"/>
+<text x="1068" y="529" fill="currentColor" font-weight="400">sale_id</text>
+<text x="1392" y="529" text-anchor="end" fill="currentColor" font-size="9" font-weight="700">FK</text>
+<text x="1068" y="540" fill="var(--ink-muted)" font-size="8.3" font-style="italic">→ sale · cascade · uniq with item_number · stable across re-pulls</text>
+<line x1="1060" y1="544" x2="1400" y2="544" stroke="var(--border)" stroke-width="0.6"/>
+<text x="1068" y="556" fill="currentColor" font-weight="400">item_id</text>
+<text x="1392" y="556" text-anchor="end" fill="currentColor" font-size="9" font-weight="700">FK</text>
+<text x="1068" y="567" fill="var(--ink-muted)" font-size="8.3" font-style="italic">→ item</text>
+<line x1="1060" y1="571" x2="1400" y2="571" stroke="var(--border)" stroke-width="0.6"/>
+<text x="1068" y="583" fill="currentColor" font-weight="400">product_id</text>
+<text x="1392" y="583" text-anchor="end" fill="currentColor" font-size="9" font-weight="700">FK</text>
+<text x="1068" y="594" fill="var(--ink-muted)" font-size="8.3" font-style="italic">→ product.product · related via item_id</text>
+<line x1="1060" y1="598" x2="1400" y2="598" stroke="var(--border)" stroke-width="0.6"/>
+<text x="1068" y="610" fill="currentColor" font-weight="400">warehouse_id</text>
+<text x="1392" y="610" text-anchor="end" fill="currentColor" font-size="9" font-weight="700">FK</text>
+<text x="1068" y="621" fill="var(--ink-muted)" font-size="8.3" font-style="italic">→ stock.warehouse · related via branch_id</text>
+<line x1="1060" y1="625" x2="1400" y2="625" stroke="var(--border)" stroke-width="0.6"/>
+<text x="1068" y="637" fill="currentColor" font-weight="400">branch_id, source_id, brand_id</text>
+<text x="1392" y="637" text-anchor="end" fill="currentColor" font-size="9" font-weight="700">FK ×3</text>
+<text x="1068" y="648" fill="var(--ink-muted)" font-size="8.3" font-style="italic">related from sale</text>
+<line x1="1060" y1="652" x2="1400" y2="652" stroke="var(--border)" stroke-width="0.6"/>
+<text x="1068" y="664" fill="currentColor" font-weight="400">missing_numbers</text>
+<text x="1392" y="664" text-anchor="end" fill="currentColor" font-size="9" font-weight="700">19.19</text>
+<text x="1068" y="675" fill="var(--ink-muted)" font-size="8.3" font-style="italic">own line-level tracking, merged with header's in Sales Detail</text>
+<line x1="1060" y1="679" x2="1400" y2="679" stroke="var(--border)" stroke-width="0.6"/>
+<text x="1068" y="691" fill="currentColor" font-weight="400">invoice_number … packaging_charges</text>
+<text x="1068" y="702" fill="var(--ink-muted)" font-size="8.3" font-style="italic">15 related/denormalized header fields</text>
+<line x1="1060" y1="706" x2="1400" y2="706" stroke="var(--border)" stroke-width="0.6"/>
+<text x="1068" y="718" fill="currentColor" font-weight="400">is_mapped</text>
+<text x="1068" y="729" fill="var(--ink-muted)" font-size="8.3" font-style="italic">computed: product_id is set</text>
+<line x1="1060" y1="733" x2="1400" y2="733" stroke="var(--border)" stroke-width="0.6"/>
+<text x="1068" y="745" fill="currentColor" font-weight="400">item_number, item_name, sku_code, category_name</text>
+<text x="1068" y="756" fill="var(--ink-muted)" font-size="8.3" font-style="italic">item_number unique per sale</text>
+<line x1="1060" y1="760" x2="1400" y2="760" stroke="var(--border)" stroke-width="0.6"/>
+<text x="1068" y="772" fill="currentColor" font-weight="400">quantity, unit_price + gross/discount/tax/net/item_total + CGST/SGST amt+%</text>
+<text x="1068" y="783" fill="var(--ink-muted)" font-size="8.3" font-style="italic">10 quantity/amount/tax fields</text>
+<line x1="1060" y1="787" x2="1400" y2="787" stroke="var(--border)" stroke-width="0.6"/>
+<text x="1068" y="799" fill="currentColor" font-weight="400">item_nature, factored_discount_amount, kot_number/status/timestamp</text>
+<text x="1068" y="810" fill="var(--ink-muted)" font-size="8.3" font-style="italic">5 fields</text>
+<line x1="1060" y1="814" x2="1400" y2="814" stroke="var(--border)" stroke-width="0.6"/>
+<text x="1068" y="826" fill="currentColor" font-weight="400">options, variant</text>
+<text x="1068" y="837" fill="var(--ink-muted)" font-size="8.3" font-style="italic">options: raw JSON, ~10% of items</text>
+</g>
+</g>
+<g>
+<path d="M310,78.5 C165.0,78.5 165.0,35.0 20,35.0" fill="none" stroke="var(--hub)" stroke-width="1" opacity="0.32" marker-end="url(#erarrow)"/>
+<path d="M310,193.5 C165.0,193.5 165.0,245.0 20,245.0" fill="none" stroke="var(--hub)" stroke-width="1" opacity="0.32" marker-end="url(#erarrow)"/>
+<path d="M310,358.5 C165.0,358.5 165.0,35.0 20,35.0" fill="none" stroke="var(--hub)" stroke-width="1" opacity="0.32" marker-end="url(#erarrow)"/>
+<path d="M310,429.5 C165.0,429.5 165.0,370.0 20,370.0" fill="none" stroke="var(--hub)" stroke-width="1" opacity="0.32" marker-end="url(#erarrow)"/>
+<path d="M690,78.5 C355.0,78.5 355.0,35.0 20,35.0" fill="none" stroke="var(--hub)" stroke-width="1" opacity="0.32" marker-end="url(#erarrow)"/>
+<path d="M690,105.5 C355.0,105.5 355.0,140.0 20,140.0" fill="none" stroke="var(--hub)" stroke-width="1" opacity="0.32" marker-end="url(#erarrow)"/>
+<path d="M690,132.5 C500.0,132.5 500.0,35.0 310,35.0" fill="none" stroke="var(--hub)" stroke-width="1" opacity="0.32" marker-end="url(#erarrow)"/>
+<path d="M690,159.5 C500.0,159.5 500.0,315.0 310,315.0" fill="none" stroke="var(--hub)" stroke-width="1" opacity="0.32" marker-end="url(#erarrow)"/>
+<path d="M690,438.5 C355.0,438.5 355.0,35.0 20,35.0" fill="none" stroke="var(--hub)" stroke-width="1" opacity="0.32" marker-end="url(#erarrow)"/>
+<path d="M690,465.5 C355.0,465.5 355.0,140.0 20,140.0" fill="none" stroke="var(--hub)" stroke-width="1" opacity="0.32" marker-end="url(#erarrow)"/>
+<path d="M690,492.5 C500.0,492.5 500.0,35.0 310,35.0" fill="none" stroke="var(--hub)" stroke-width="1" opacity="0.32" marker-end="url(#erarrow)"/>
+<path d="M1060,78.5 C540.0,78.5 540.0,35.0 20,35.0" fill="none" stroke="var(--hub)" stroke-width="1" opacity="0.32" marker-end="url(#erarrow)"/>
+<path d="M1060,105.5 C540.0,105.5 540.0,140.0 20,140.0" fill="none" stroke="var(--hub)" stroke-width="1" opacity="0.32" marker-end="url(#erarrow)"/>
+<path d="M1060,159.5 C685.0,159.5 685.0,35.0 310,35.0" fill="none" stroke="var(--hub)" stroke-width="1" opacity="0.32" marker-end="url(#erarrow)"/>
+<path d="M1060,500.5 C1020,500.5 1020,485.0 1060,485.0" fill="none" stroke="var(--hub)" stroke-width="1" opacity="0.4" marker-end="url(#erarrow)"/>
+<path d="M1060,528.5 C1020,528.5 1020,35.0 1060,35.0" fill="none" stroke="var(--hub)" stroke-width="1" opacity="0.4" marker-end="url(#erarrow)"/>
+<path d="M1060,555.5 C685.0,555.5 685.0,315.0 310,315.0" fill="none" stroke="var(--hub)" stroke-width="1" opacity="0.32" marker-end="url(#erarrow)"/>
+<path d="M1060,582.5 C540.0,582.5 540.0,370.0 20,370.0" fill="none" stroke="var(--hub)" stroke-width="1" opacity="0.32" marker-end="url(#erarrow)"/>
+<path d="M1060,609.5 C540.0,609.5 540.0,245.0 20,245.0" fill="none" stroke="var(--hub)" stroke-width="1" opacity="0.32" marker-end="url(#erarrow)"/>
+<path d="M1060,636.5 C685.0,636.5 685.0,35.0 310,35.0" fill="none" stroke="var(--hub)" stroke-width="1" opacity="0.32" marker-end="url(#erarrow)"/>
+</g>
+</svg>
+  </figure>
+  <div class="legend">
+    <span><span class="swatch" style="background:var(--ext)"></span>Odoo's own tables &mdash; not owned by this module</span>
+    <span><span class="swatch" style="background:var(--hub)"></span>the two master/mapping tables</span>
+    <span><span class="swatch" style="background:currentColor"></span>the four typed report tables</span>
+  </div>
+  <figcaption>Wide fact tables (Sale, Sale Line) group repetitive scalar columns into labeled bands
+  (e.g. "11 amount/tax fields") to keep the box readable &mdash; every foreign key is still its own row
+  with an explicit &rarr; target. Relationship lines are a secondary visual guide, not the primary source
+  of truth: read the italic note under each FK row for the exact target. For a version with clean
+  auto-routed lines and full expansion of every grouped band, paste the DBML below into
+  <code>dbdiagram.io</code>.</figcaption>
+
+  <div class="callout">
+    <h3>Why Outlet Master is one table, not three</h3>
+    <p>The original mapping sheet specified one shared <code>POS_Outlet_Master</code> table for Branch,
+    Brand and Source, discriminated by a <code>lookup_type</code> column &mdash; that's what's built. Branch
+    rows carry the one extra field (<code>warehouse_id</code>) the other two never populate.</p>
+    <h3>Why real tables, not reference datasets</h3>
+    <p>Reference datasets are file-backed and re-parsed on every lookup &mdash; fine for an outbound API
+    call, but they have no stable row identity for a Many2one to point at. Every arrow above needs exactly
+    that. Data volume here (under 500 rows across both master tables) makes "load per fetch" a non-issue
+    either way.</p>
+  </div>
+
+  <h2>3 &mdash; DBML (copy into dbdiagram.io)</h2>
+  <p style="color:var(--ink-muted); font-size:14px; max-width:74ch;">Complete, uncondensed &mdash; every
+  column, type, PK/FK and unique constraint on all six tables, plus the four external Odoo tables they
+  point into. This is the same schema as the diagram above, just exhaustive instead of grouped.</p>
+  <pre class="dbml"><code>// Paste this into dbdiagram.io (or any DBML renderer) for an interactive version.
+// harleys_pos_repository — POS Repository (Rista integration), as of the registry -&gt; repository rename.
+
+Table connect_partner {
+  id integer [pk]
+  name varchar
+  Note: &#x27;external - harleys_connect. One row per Rista connection today.&#x27;
+}
+Table res_company { id integer [pk]  name varchar  Note: &#x27;external - Odoo&#x27; }
+Table stock_warehouse { id integer [pk]  code varchar  name varchar  Note: &#x27;external - Inventory&#x27; }
+Table product_product { id integer [pk]  default_code varchar  name varchar  Note: &#x27;external - Sales&#x27; }
+
+Table pos_repository_rista_outlet_master {
+  id integer [pk]
+  partner_id integer [not null, ref: &gt; connect_partner.id]
+  lookup_type varchar [not null, note: &#x27;branch / brand / source&#x27;]
+  code varchar [not null]
+  name varchar [not null]
+  description varchar
+  warehouse_id integer [ref: &gt; stock_warehouse.id, note: &#x27;branch rows only&#x27;]
+  warehouse_code varchar [note: &#x27;computed / inverse of warehouse_id&#x27;]
+
+  indexes { (partner_id, lookup_type, code) [unique] }
+  Note: &#x27;Outlet Mapping / Brand List / Source List - one shared table per the mapping sheet&#x27;
+}
+
+Table pos_repository_rista_item {
+  id integer [pk]
+  partner_id integer [not null, ref: &gt; connect_partner.id]
+  code varchar [not null, note: &#x27;Rista skuCode&#x27;]
+  name varchar [not null]
+  product_id integer [ref: &gt; product_product.id]
+  product_default_code varchar [note: &#x27;computed / inverse of product_id&#x27;]
+
+  indexes { (partner_id, code) [unique] }
+  Note: &#x27;Item Mapping&#x27;
+}
+
+Table pos_repository_rista_sale {
+  id integer [pk]
+  partner_id integer [not null, ref: &gt; connect_partner.id]
+  company_id integer [ref: &gt; res_company.id]
+  invoice_number varchar [not null]
+  source varchar
+  source_id integer [ref: &gt; pos_repository_rista_outlet_master.id, note: &#x27;lookup_type=source&#x27;]
+  brand_name varchar
+  brand_id integer [ref: &gt; pos_repository_rista_outlet_master.id, note: &#x27;lookup_type=brand&#x27;]
+  branch_id integer [ref: &gt; pos_repository_rista_outlet_master.id, note: &#x27;lookup_type=branch&#x27;]
+  branch_code varchar
+  branch_name varchar
+  invoice_date datetime
+  invoice_day date
+  created_time datetime
+  modified_time datetime
+  status varchar
+  fulfillment_status varchar
+  invoice_type varchar
+  channel varchar
+  sale_by varchar
+  note text
+  missing_numbers varchar [note: &#x27;19.19 - pipe-delimited names of numeric fields truly absent (not sent-as-zero) on the last pull&#x27;]
+  round_off_amount float [note: &#x27;restored 19.0.3.19.0; blank/missing on rows synced before the restore, not recoverable&#x27;]
+  gross_amount float
+  discount_amount float [note: &#x27;labeled Invoice Total Discount - reads totalDiscountAmount only, no fallback to the header raw discountAmount key&#x27;]
+  net_discount_amount float
+  tax_amount float
+  net_amount float
+  net_charge_amount float
+  balance_amount float
+  bill_cgst_amount float
+  bill_cgst_percent float
+  bill_sgst_amount float
+  bill_sgst_percent float
+  packaging_charges float
+  payment_mode varchar
+  payment_date datetime
+  delivery_channel varchar
+  delivery_date datetime
+  delivery_by_name varchar
+  delivery_by_phone varchar
+  customer_name varchar
+  customer_phone varchar
+  accepted_time datetime
+  closed_time datetime
+  rider_assigned_time datetime
+  processed_time datetime
+  rider_arrived_time datetime
+  dispatched_time datetime
+  delivered_time datetime
+  voided_time datetime
+  processed_attempt_time datetime
+  device_label varchar
+  sale_by_user_id varchar
+  person_count integer
+  status_reason varchar [note: &#x27;added 18.0 - contract field, no live data yet&#x27;]
+  status_remarks varchar [note: &#x27;added 18.0 - contract field, no live data yet&#x27;]
+  item_log_reason varchar [note: &#x27;added 18.0 - contract field, no live data yet&#x27;]
+  item_log_updated_by varchar [note: &#x27;added 18.0 - contract field, no live data yet&#x27;]
+  item_log_updated_time datetime [note: &#x27;added 18.0 - contract field, no live data yet&#x27;]
+
+  indexes { (partner_id, invoice_number) [unique] }
+  Note: &#x27;POS Orders&#x27;
+}
+
+Table pos_repository_rista_sale_line {
+  id integer [pk]
+  sale_id integer [not null, ref: &gt; pos_repository_rista_sale.id, note: &#x27;cascade delete; matched by item_number on re-pull, so this id is stable&#x27;]
+  missing_numbers varchar [note: &#x27;19.19 - this line&#x27;&#x27;s own absent-vs-zero tracking&#x27;]
+  invoice_number varchar [note: &#x27;related, stored&#x27;]
+  branch_id integer [ref: &gt; pos_repository_rista_outlet_master.id, note: &#x27;related, stored&#x27;]
+  branch_name varchar
+  invoice_day date
+  channel varchar
+  source varchar
+  source_id integer [ref: &gt; pos_repository_rista_outlet_master.id]
+  brand_name varchar
+  brand_id integer [ref: &gt; pos_repository_rista_outlet_master.id]
+  status varchar
+  payment_mode varchar
+  payment_date datetime
+  delivery_channel varchar
+  customer_name varchar
+  bill_cgst_amount float
+  bill_sgst_amount float
+  net_charge_amount float
+  balance_amount float
+  packaging_charges float
+  warehouse_id integer [ref: &gt; stock_warehouse.id, note: &#x27;related via branch_id&#x27;]
+  item_id integer [ref: &gt; pos_repository_rista_item.id]
+  product_id integer [ref: &gt; product_product.id, note: &#x27;related via item_id&#x27;]
+  is_mapped boolean [note: &#x27;computed: product_id is set&#x27;]
+  item_number integer [note: &#x27;1-based sequence within invoice&#x27;]
+  item_name varchar
+  sku_code varchar
+  category_name varchar
+  quantity float
+  unit_price float
+  gross_amount float
+  discount_amount float
+  discount_reason varchar
+  tax_amount float
+  cgst_amount float
+  cgst_percent float
+  sgst_amount float
+  sgst_percent float
+  net_amount float
+  item_total_amount float
+  item_nature varchar
+  factored_discount_amount float
+  kot_number varchar
+  kot_status varchar
+  kot_timestamp datetime
+  options text [note: &#x27;raw JSON array, ~10% of items&#x27;]
+  variant varchar
+
+  indexes { (sale_id, item_number) [unique] }
+  Note: &#x27;POS Order Lines&#x27;
+}
+
+Table pos_repository_rista_soldout {
+  id integer [pk]
+  partner_id integer [not null, ref: &gt; connect_partner.id]
+  company_id integer [ref: &gt; res_company.id]
+  branch_id integer [ref: &gt; pos_repository_rista_outlet_master.id]
+  branch_code varchar
+  branch_name varchar
+  item_id integer [ref: &gt; pos_repository_rista_item.id]
+  sku_code varchar
+  item_name varchar
+  measuring_unit varchar
+  category_name varchar
+  category_types varchar
+  item_type varchar
+  status_type varchar [note: &#x27;SOLD_OUT / AVAILABLE&#x27;]
+  event_type varchar [note: &#x27;IN / OUT&#x27;]
+  user_name varchar
+  user_id varchar
+  event_date datetime
+  event_business_day date
+  event_key varchar [not null, note: &#x27;sha256 hash of the identity fields&#x27;]
+
+  indexes { (partner_id, event_key) [unique] }
+  Note: &#x27;Sold Out History&#x27;
+}
+
+Table pos_repository_rista_outlet_status {
+  id integer [pk]
+  partner_id integer [not null, ref: &gt; connect_partner.id]
+  company_id integer [ref: &gt; res_company.id]
+  branch_id integer [ref: &gt; pos_repository_rista_outlet_master.id]
+  branch_code varchar
+  branch_name varchar
+  channel varchar
+  order_source varchar
+  report_date date
+  status_value varchar [note: &quot;Rista sends status, sheet names it statusValue&quot;]
+
+  indexes { (partner_id, branch_code, channel, order_source) [unique] }
+  Note: &#x27;Outlet Status - live snapshot, not history&#x27;
+}
+</code></pre>
+
+  <h2>4 &mdash; Table reference</h2>
+  <div class="cards">
+    <div class="card">
+      <span class="model">pos_repository_rista_sale<span class="count">134,309 rows</span></span>
+      <span style="color:var(--ink-muted)">POS Orders</span>
+      <ul>
+        <li class="fk">branch_id / brand_id / source_id &rarr; outlet.master</li>
+        <li>invoice_number <span class="mono" style="color:var(--ink-muted)">unique per partner</span></li>
+        <li>~45 scalar fields: amounts, tax, delivery, event timeline</li>
+        <li>status_reason/remarks, item_log_* <span class="mono" style="color:var(--ink-muted)">added 18.0</span></li>
+        <li class="fk">line_ids &rarr; sale.line (1:many)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <span class="model">pos_repository_rista_sale_line<span class="count">26,535 rows</span></span>
+      <span style="color:var(--ink-muted)">POS Order Lines</span>
+      <ul>
+        <li class="fk">sale_id &rarr; sale <span class="mono" style="color:var(--ink-muted)">cascade</span></li>
+        <li class="fk">item_id &rarr; item</li>
+        <li>item_number <span class="mono" style="color:var(--ink-muted)">unique per sale</span></li>
+        <li>sku_code, quantity, item-level tax, options, variant</li>
+      </ul>
+    </div>
+    <div class="card">
+      <span class="model">pos_repository_rista_soldout<span class="count">21,508 rows</span></span>
+      <span style="color:var(--ink-muted)">Sold Out History</span>
+      <ul>
+        <li class="fk">branch_id &rarr; outlet.master</li>
+        <li class="fk">item_id &rarr; item</li>
+        <li>event_key <span class="mono" style="color:var(--ink-muted)">hash, unique per partner</span></li>
+        <li>status_type, event_type (IN/OUT)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <span class="model">pos_repository_rista_outlet_status<span class="count">230 rows</span></span>
+      <span style="color:var(--ink-muted)">Outlet Status</span>
+      <ul>
+        <li class="fk">branch_id &rarr; outlet.master</li>
+        <li>unique(partner, branch_code, channel, order_source)</li>
+        <li>status_value <span class="mono" style="color:var(--ink-muted)">live snapshot, not history</span></li>
+      </ul>
+    </div>
+    <div class="card">
+      <span class="model">pos_repository_rista_outlet_master<span class="badge hub">hub</span><span class="count">73 + 3 + 3</span></span>
+      <span style="color:var(--ink-muted)">Outlet Mapping &middot; Brand List &middot; Source List</span>
+      <ul>
+        <li>lookup_type: branch / brand / source</li>
+        <li>unique(partner, lookup_type, code)</li>
+        <li class="fk">warehouse_id &rarr; stock.warehouse <span class="mono" style="color:var(--ink-muted)">branch rows only</span></li>
+        <li>Auto-Map button + native Excel import</li>
+      </ul>
+    </div>
+    <div class="card">
+      <span class="model">pos_repository_rista_item<span class="badge hub">hub</span><span class="count">320 rows</span></span>
+      <span style="color:var(--ink-muted)">Item Mapping</span>
+      <ul>
+        <li>unique(partner, code) <span class="mono" style="color:var(--ink-muted)">code = skuCode</span></li>
+        <li class="fk">product_id &rarr; product.product</li>
+        <li>Auto-Map button + native Excel import</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>5 &mdash; Migration &amp; rename history</h2>
+  <table class="ref">
+    <tr><th>Version</th><th>What it did</th><th>Status</th></tr>
+    <tr><td class="mono">19.0.3.14.0</td><td>Builds Outlet Master, migrates the former branch-only model's 73 rows + warehouse mappings in as <code>lookup_type='branch'</code>, seeds Brand/Source from real data. Stops typed processors from dual-writing to generic capture.</td><td class="mono ok">installed</td></tr>
+    <tr><td class="mono">19.0.3.15.0</td><td>Backfills 6 fields wrongly assumed absent. Adds Auto-Map + Excel import. Adds <code>group_pos_repository_reports</code>.</td><td class="mono ok">installed</td></tr>
+    <tr><td class="mono">19.0.3.16.0</td><td>Restores 71/76 Outlet Mapping <code>warehouse_id</code> links. Backfills <code>source_id</code>/<code>brand_id</code> historically &mdash; 100% match.</td><td class="mono ok">installed</td></tr>
+    <tr><td class="mono">19.0.3.17.0</td><td>Removes Response Repository, Build Report, generic capture (<code>pulled.record</code>, <code>GenericCaptureProcessor</code>) and the "Jobs &amp; Backfill" menu.</td><td class="mono ok">installed</td></tr>
+    <tr><td class="mono">19.0.3.18.0</td><td>Field-name audit against live payloads: adds 5 status/item-log contract fields, drops 7 redundant/no-value columns.</td><td class="mono ok">installed</td></tr>
+    <tr><td>Orphan-table cleanup</td><td>Dropped 10 zombie tables (<code>pos_registry_sale*</code>, old wizards) left behind by a pre-Rista module redesign &mdash; no model, no code reference, zero data of value. Hand-run SQL, not a numbered migration.</td><td class="mono ok">done</td></tr>
+    <tr><td>Technical rename: registry &rarr; repository</td><td>Module folder, all model <code>_name</code>s, 6 tables + 6 sequences, 302 xmlids, the config-parameter key, and <code>hr_shared_login_binding</code>'s one dependency line. Hand-run SQL, dry-run verified before commit.</td><td class="mono ok">done</td></tr>
+    <tr><td>Orphaned-menu cleanup (2 rounds)</td><td>Renaming a module's xmlid pointers doesn't delete the <code>ir.ui.menu</code>/<code>ir.actions.act_window</code>/<code>ir.ui.view</code> rows they used to label &mdash; a whole duplicate "POS Repository" app tree (12 menus, 9 actions, 19 views, all on the dead <code>pos.registry.*</code> models) survived the rename silently until a second sweep found it by raw ID reference, not by xmlid. Hand-run SQL.</td><td class="mono ok">done</td></tr>
+    <tr><td class="mono">19.0.3.19.0</td><td>Response-layout revision: restores <code>round_off_amount</code>; adds <code>missing_numbers</code> (absent-vs-zero tracking) on Sale and Sale Line; line upserts now match by <code>item_number</code> and update in place instead of delete-and-recreate, so line ids survive a re-pull; relabels the header's <code>discount_amount</code> to "Invoice Total Discount," reading only <code>totalDiscountAmount</code> (no fallback to the header's separate raw <code>discountAmount</code> key, which real payloads confirm is a distinct field); adds the Sales Detail screen (60 columns, one row per item, typed fields only &mdash; an earlier draft of this stored the full raw JSON response instead, reverted before install). Migration marks every pre-existing row's <code>round_off_amount</code> as unknown rather than a fake zero, since 18.0's column drop already destroyed the historical values.</td><td class="mono ok">installed</td></tr>
+  </table>
+
+  <h2>6 &mdash; Screens</h2>
+  <table class="ref">
+    <tr><th>Screen</th><th>Grain</th><th>Columns</th></tr>
+    <tr><td>POS Orders</td><td>one row per invoice</td><td>Order header fields, most non-essential ones behind the column picker (<code>optional="hide"</code>)</td></tr>
+    <tr><td>POS Order Lines</td><td>one row per item</td><td>Exactly the sheet's 10 <code>POS_Order_Line</code> columns (ID, Order_ID, Line_ID, Item Code, Qty, Unit Price, Gross/Net Amount, Discount, Discount Reason)</td></tr>
+    <tr><td>Sales Detail</td><td>one row per item</td><td>The sheet's full 60-column <code>POS_Order</code> row, all default-visible (<code>optional="show"</code>); its own search view with no sidebar, to avoid a second page-level horizontal scrollbar at that width</td></tr>
+  </table>
+
+  <h2>7 &mdash; What's not in this picture</h2>
+  <table class="ref">
+    <tr><th>Removed</th><th>Why</th></tr>
+    <tr><td class="mono">pos_registry_pulled_record</td><td>Generic zero-schema capture table + <code>GenericCaptureProcessor</code> &mdash; every live endpoint already has a typed projection. Removed in 19.0.3.17.0 along with Response Repository and Build Report.</td></tr>
+    <tr><td class="mono">pos_registry_rista_branch</td><td>Superseded by Outlet Master (<code>lookup_type='branch'</code>) in 19.0.3.14.0.</td></tr>
+    <tr><td>Import wizards</td><td>Built, then removed &mdash; native Odoo list import plus <code>warehouse_code</code>/<code>product_default_code</code> smart-resolve columns cover it.</td></tr>
+    <tr><td class="mono">item_count, bill_amount, total_amount, currency, service_charge, tags</td><td>Dropped from Sale (+ <code>service_charge</code> from Sale Line) in 19.0.3.18.0 &mdash; duplicated data kept elsewhere or added no value this account's reporting needs. (<code>round_off_amount</code>, the 7th field dropped here, was restored in 19.0.3.19.0.)</td></tr>
+    <tr><td>10 orphan tables (<code>pos_registry_sale</code>, <code>_sale_line</code>, <code>_sale_payment</code>, <code>_sale_summary</code>, 4 old wizards, <code>live_api_wizard</code>)</td><td>Zombie tables from a pre-Rista module design &mdash; no <code>ir_model</code> entry, no code reference anywhere in the tree. Dropped by hand.</td></tr>
+    <tr><td>A full duplicate "POS Repository" app tree</td><td>12 orphaned menus / 9 actions / 19 views left over from the rename, surviving on the dead <code>pos.registry.*</code> models until a raw-ID sweep found them. Dropped by hand.</td></tr>
+    <tr><td>A raw-JSON response layer (<code>response_data</code>, 60 computed display fields)</td><td>Built as a first attempt at "show exactly what Rista sent, no calculation" for Sales Detail, then reverted in favor of <code>missing_numbers</code> on the existing typed fields &mdash; same guarantee, no duplicate storage.</td></tr>
+    <tr><td>"registry" as a technical identifier</td><td>Module folder, model names, table names and xmlids all renamed to "repository" to match the app's display name.</td></tr>
+  </table>
+
+  <div class="foot">
+    harleys_pos_repository &middot; 19.0.3.19.0 &middot; one Rista connection, partner_id 13 &middot;
+    134,309 sales / 26,535 lines / 21,508 sold-out events / 230 status rows / 79 outlet-master rows / 327 items
+  </div>
+
+</main>
+
+</body></html>

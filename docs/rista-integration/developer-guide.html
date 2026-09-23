@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rista POS Integration — Implementation Reference</title>
+<link rel="stylesheet" href="../assets/styles/main.css">
+</head>
+<body>
+<div class="page">
+
+  <a class="back-link" href="../index.html">&larr; Back to documentation home</a>
+
+  <header class="doc-head">
+    <p class="eyebrow">Implementation Reference — Harleys Odoo 19 Enterprise</p>
+    <h1>Rista POS Integration</h1>
+    <p class="dek">Harley's retail POS runs on Rista, an external vendor — not Odoo's own Point of Sale app. This module pulls Rista's sales, sold-out and outlet-status reports into Odoo on a schedule, purely for reporting, built on top of Harley's Connect, the generic external-partner API engine also used for Hyperpure.</p>
+    <div class="meta">
+      <span><b>Module</b> harleys_pos_repository</span>
+      <span><b>Status</b> Live, actively syncing (134k+ orders)</span>
+      <span><b>Depends on</b> harleys_connect</span>
+    </div>
+  </header>
+
+  <nav class="toc">
+    <b>Contents</b>
+    <ol>
+      <li><a href="#problem">The problem</a></li>
+      <li><a href="#architecture">Architecture: two independent pieces</a></li>
+      <li><a href="#pipeline">The pull pipeline</a></li>
+      <li><a href="#schema">Schema: six tables</a></li>
+      <li><a href="#outlet-master">Outlet Master: one shared table, not three</a></li>
+      <li><a href="#item-mapping">Item Mapping: how it's populated, and its one display gap</a></li>
+      <li><a href="#missing-numbers">The missing-vs-zero problem</a></li>
+      <li><a href="#screens">Screens and permissions</a></li>
+      <li><a href="#walkthrough">Walkthrough: following one order end to end</a></li>
+      <li><a href="#removed">What was built, then removed</a></li>
+      <li><a href="#files">Module reference</a></li>
+      <li><a href="#limitations">Known limitations / open items</a></li>
+      <li><a href="#schema-ref">Full column-level schema reference</a></li>
+    </ol>
+  </nav>
+
+  <section id="problem">
+    <h2>1. The problem</h2>
+    <p>Harley's stores ring up sales through <b>Rista</b>, a third-party POS/aggregator system — not Odoo. Odoo's own <code>point_of_sale</code> app is installed but has zero rows in every one of its tables; it plays no role here and isn't touched by this integration. The business need is purely reporting: get Rista's order, sold-out and outlet-status data into Odoo, in a form that can be filtered, pivoted and exported, without building or maintaining a second POS system inside Odoo.</p>
+  </section>
+
+  <section id="architecture">
+    <h2>2. Architecture: two independent pieces</h2>
+    <table>
+      <thead><tr><th>Part</th><th>Answers</th><th>Where it lives</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><b>Connect</b> (<code>harleys_connect</code>)</td>
+          <td>"How do I authenticate to a partner, paginate a request, run it on a schedule, and log what happened?" — generic, reusable for any external API.</td>
+          <td><code>connect.partner</code>, <code>connect.endpoint</code>, <code>connect.manager</code>, <code>connect.job</code>, <code>connect.log</code></td>
+        </tr>
+        <tr>
+          <td><b>POS Repository</b> (<code>harleys_pos_repository</code>)</td>
+          <td>"What does a Rista response mean, and where does it land?" — Rista-specific typed storage and processors.</td>
+          <td><code>models/pos_rista_*.py</code>, <code>models/processors.py</code></td>
+        </tr>
+      </tbody>
+    </table>
+    <p>The dependency is strictly one-way: POS Repository registers its processors with Connect at load time; Connect has no knowledge of POS Repository's models. The exact same split Hyperpure's own integration is built on, sharing the same Connect engine.</p>
+  </section>
+
+  <section id="pipeline">
+    <h2>3. The pull pipeline</h2>
+    <ol>
+      <li><code>connect.job</code> — one row per Rista endpoint (Sales Page, Sold-Out History, Outlet Status) — fires on a 24-hour interval, fanning out over all 73 branches, with <code>pull_offset_days=2</code>.</li>
+      <li><code>connect.manager.run_job()</code> &rarr; <code>execute()</code> makes the one HTTP call (signed-JWT auth, pagination), then resolves the response processor via <code>_get_response_processor(endpoint)</code>.</li>
+      <li>That resolver checks the endpoint's own <code>pos_capture</code> + <code>pos_*_projection</code> flags. As of <code>19.0.3.17.0</code>, an endpoint with <code>pos_capture=True</code> and no typed projection flag set is a hard error — the old fallback, a generic schema-less capture table, was removed entirely.</li>
+      <li>The matched processor (<code>RistaSalesPageProcessor</code> / <code>RistaSoldOutHistoryProcessor</code> / <code>RistaOutletStatusProcessor</code>) extracts rows and calls that table's own <code>upsert()</code>.</li>
+      <li><code>upsert()</code> calls <code>pos.repository.rista.outlet.master</code> and <code>pos.repository.rista.item</code>'s <code>_sync()</code> classmethods as a <b>side effect</b> — the only place new branch/brand/source/item rows are ever created. There is no separate "sync items" pull.</li>
+      <li>Rows land in the typed table; the Rista Reports screens read from there directly.</li>
+    </ol>
+    <div class="callout">
+      <b>No more "capture first, type later"</b>
+      Removing the generic capture fallback in <code>19.0.3.17.0</code> was a deliberate trade: one less table/screen to maintain, in exchange for a real constraint — a brand-new Rista report, or a second POS vendor, now needs a typed projection built before it can be processed at all.
+    </div>
+  </section>
+
+  <section id="schema">
+    <h2>4. Schema: six tables</h2>
+    <p>All six share <code>partner_id &rarr; connect.partner</code> (one Rista connection today); omitted from the tables below since it's identical everywhere.</p>
+
+    <h3>pos_repository_rista_outlet_master — Outlet Mapping / Brand List / Source List</h3>
+    <p>One shared table for three enumerable dimensions, discriminated by <code>lookup_type</code> — matching the vendor's own mapping sheet design, not three separate tables. See §5.</p>
+
+    <h3>pos_repository_rista_item — Item Mapping</h3>
+    <p><code>code</code> = Rista's <code>skuCode</code>; <code>name</code> comes from <code>shortName</code>/<code>longName</code> (Sales Page) or <code>itemName</code> (Sold-Out History) and never includes size/variant. See §6.</p>
+
+    <h3>pos_repository_rista_sale — POS Orders (one row per invoice)</h3>
+    <p>~60 fields, matching the vendor's own <code>POS_Order</code> mapping sheet column-for-column — cross-checked key-for-key against real captured payloads, zero name mismatches found. <code>unique(partner_id, invoice_number)</code>.</p>
+    <table>
+      <thead><tr><th>Field</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><code>source_id</code> / <code>brand_id</code> / <code>branch_id</code></td><td>FK &rarr; <code>outlet_master.id</code>, one per <code>lookup_type</code></td></tr>
+        <tr><td><code>discount_amount</code> ("Invoice Total Discount")</td><td>Reads <code>totalDiscountAmount</code> only — deliberately no fallback to the header's own separate raw <code>discountAmount</code> key, a genuinely distinct field confirmed in real payloads</td></tr>
+        <tr><td><code>round_off_amount</code></td><td>Dropped 18.0, restored 19.0.3.19.0 — see §12 for the historical-data caveat</td></tr>
+        <tr><td><code>missing_numbers</code></td><td>See §7</td></tr>
+        <tr><td><code>status_reason</code>/<code>status_remarks</code>/<code>item_log_*</code></td><td>Modeled per the vendor's own contract despite being confirmed absent from every one of 134k+ real orders — a deliberate bet on future use</td></tr>
+        <tr><td><code>line_ids</code></td><td>O2M &rarr; <code>sale_line</code>; upsert is match-by-<code>item_number</code> and update-in-place as of 19.0.3.19.0, not delete-and-recreate — line ids survive a re-pull</td></tr>
+      </tbody>
+    </table>
+
+    <h3>pos_repository_rista_sale_line — POS Order Lines / Sales Detail (one row per item)</h3>
+    <p>~40 fields: the item's own data (<code>sku_code</code>, <code>quantity</code>, tax breakdown, KOT number/status/timestamp, <code>options</code> raw JSON, <code>variant</code>) plus ~15 related+stored header fields so this table stands alone for reporting without a join back to the header.</p>
+
+    <h3>pos_repository_rista_soldout — Sold Out History</h3>
+    <p>Keyed by <code>event_key</code>, a sha256 hash of the endpoint's own configured Identity Fields (branch, SKU, item type, status type, event type, event date) — deliberately broader than the vendor sheet's own <code>unique(Source,Branch,Item,EventDate)</code>, so an item going OUT then back IN the same day/SKU is kept as two distinct events, not collapsed.</p>
+
+    <h3>pos_repository_rista_outlet_status — Outlet Status (live snapshot, not history)</h3>
+    <p>Keyed by <code>(partner_id, branch_code, channel, order_source)</code> — deliberately wider than the sheet's own <code>(Source, Branch, EventDate)</code>, since a branch shows a different status per aggregator channel. One current row per key, overwritten on every poll.</p>
+    <div class="callout warn">
+      <b>Field-name mismatch, already handled</b>
+      The sheet calls this table's status field <code>statusValue</code>; Rista's real live response for this account sends plain <code>status</code>. <code>upsert()</code> reads <code>row.get("status") or row.get("statusValue")</code> to cover both.
+    </div>
+  </section>
+
+  <section id="outlet-master">
+    <h2>5. Outlet Master: one shared table, not three</h2>
+    <p>The mapping sheet specified one shared <code>POS_Outlet_Master</code> table for Branch, Brand and Source, discriminated by a <code>lookup_type</code> column — that's what's built, not three separate tables. Branch rows carry the one extra field (<code>warehouse_id</code>) the other two never populate. 79 rows live: 73 branch, 3 brand, 3 source.</p>
+    <p>Reference datasets were considered and rejected for this: they're file-backed and re-parsed on every lookup, fine for driving an outbound API call, but they have no stable row identity for a Many2one to point at — every one of the four typed reports needs exactly that for filtering and grouping. Data volume here (under 500 rows total) makes "load per fetch" a non-issue either way.</p>
+    <p>The <b>Auto-Map</b> button does an exact code-or-name pass against every warehouse; <code>warehouse_code</code> also accepts direct typing or Excel import (bare code, bare name, or Odoo's own "[code] Name" export format), rather than picking <code>warehouse_id</code> from a dropdown one row at a time.</p>
+    <figure class="shot">
+      <img src="screenshots/outlet-mapping-list.png" alt="Screenshot: Outlet Mapping list — branch code/name and mapped warehouse">
+      <div class="placeholder">Screenshot: Outlet Mapping list — branch code/name and mapped warehouse, Auto-Map button visible</div>
+      <figcaption><b>outlet-mapping-list.png</b></figcaption>
+    </figure>
+  </section>
+
+  <section id="item-mapping">
+    <h2>6. Item Mapping: how it's populated, and its one display gap</h2>
+    <p>There is no dedicated "Items" endpoint — Rista never sends a product catalog API. Every row is grown as a side effect of the two report pulls that happen to mention an item: Sales Page (per line item) and Sold-Out History. <code>_sync()</code> makes exactly one free mapping attempt, at row creation only — an exact match on <code>product.default_code</code> — then never touches <code>product_id</code> again, so it can never silently overwrite a mapping (or a deliberate non-mapping) a person already made.</p>
+    <p>327 items live; 50 mapped (15%). Checked live: none of the unmapped ones are stale or discontinued — every item currently in the table is either actively selling or actively going in/out of stock within the last 2&ndash;3 days.</p>
+    <div class="callout warn">
+      <b>Same-name rows are a display gap, not duplicate junk</b>
+      Rista's <code>shortName</code>/<code>longName</code> never include the size — e.g. two rows both named "Signature Belgium Chocolate Medovik Cake" are genuinely different, actively-selling SKUs for 600&nbsp;Gm vs 1&nbsp;Kg. The size lives in a separate <code>variant</code> field, captured only on the Sale Line, never copied onto the Item Mapping row. Not yet fixed — would need <code>_sync()</code> to also capture a representative <code>variant</code> value here.
+    </div>
+    <figure class="shot">
+      <img src="screenshots/item-mapping-list.png" alt="Screenshot: Item Mapping list — SKU code/name and mapped product">
+      <div class="placeholder">Screenshot: Item Mapping list — SKU code/name and mapped product, Auto-Map button visible</div>
+      <figcaption><b>item-mapping-list.png</b></figcaption>
+    </figure>
+  </section>
+
+  <section id="missing-numbers">
+    <h2>7. The missing-vs-zero problem</h2>
+    <p>Every numeric field extraction used to be <code>row.get("fieldName") or 0.0</code> — this collapses "Rista didn't send this field" and "Rista sent exactly 0" into the identical stored value, with no way to tell them apart later.</p>
+    <p><code>missing_numbers</code> (Char, on both Sale and Sale Line) fixes this without changing field types or losing the ability to sum/pivot: at upsert time, <b>before</b> any zero-fallback, it records a pipe-delimited list of which numeric field names were genuinely absent this pull (<code>|round_off_amount|unit_price|</code>). The stored Float itself is always a real number. The UI (<code>invisible="'|field|' in missing_numbers"</code>) and CSV/XLSX export (<code>_export_rows</code> override in <code>models/sale_line_report.py</code>) both blank the cell specifically where it's flagged — the number never lies, the display honestly shows "we don't know" instead of a fake zero.</p>
+  </section>
+
+  <section id="screens">
+    <h2>8. Screens and permissions</h2>
+    <table>
+      <thead><tr><th>Screen</th><th>Grain</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td>POS Orders</td><td>one row per invoice</td><td>Order-level report</td></tr>
+        <tr><td>POS Order Lines</td><td>one row per item</td><td>Exactly the vendor sheet's 10 <code>POS_Order_Line</code> columns</td></tr>
+        <tr><td>Sales Detail</td><td>one row per item</td><td>The vendor sheet's full 60-column <code>POS_Order</code> row, all columns default-visible; its own search view with no sidebar (a 60-column table plus a persistent searchpanel produced a second, page-level horizontal scrollbar)</td></tr>
+        <tr><td>Sold Out History, Outlet Status</td><td>typed reports</td><td>Standard list/pivot/graph</td></tr>
+        <tr><td>Outlet Mapping, Item Mapping</td><td>maintenance</td><td>Branch&harr;warehouse and SKU&harr;product mapping, both natively Excel-importable</td></tr>
+      </tbody>
+    </table>
+    <p>Access: <code>harleys_connect.group_connect_manager</code> for full/config access, or the narrower <code>group_pos_repository_reports</code> (view-only on the 4 typed reports, no Connect access implied) for a business user who only needs to look at sales data.</p>
+    <figure class="shot">
+      <img src="screenshots/rista-reports-menu.png" alt="Screenshot: POS Repository app, Rista Reports menu expanded">
+      <div class="placeholder">Screenshot: POS Repository app, Rista Reports menu expanded — POS Orders, POS Order Lines, Sales Detail, Sold Out History, Outlet Status</div>
+      <figcaption><b>rista-reports-menu.png</b></figcaption>
+    </figure>
+  </section>
+
+  <section id="walkthrough">
+    <h2>9. Walkthrough: following one order end to end</h2>
+    <p>Verified against a real live Sales Page response (invoice <code>MAH/26-27/10022</code>), not a synthetic example — every field below matched exactly, including timezone-converted timestamps.</p>
+    <ol>
+      <li>Rista sends the order with <code>sourceInfo.source: "zomato"</code>, <code>branchCode: "MAH"</code>, <code>brandName: "Harley's Fine Baking"</code>, and an <code>eventLog</code> array of status transitions.</li>
+      <li><code>upsert()</code> calls <code>outlet_master._sync()</code> three times (branch, brand, source) and stores the resulting ids on <code>branch_id</code>/<code>brand_id</code>/<code>source_id</code>.</li>
+      <li>CGST/SGST amounts are read from the order's own <code>taxes</code> array, matched by tax name — not recomputed from a rate.</li>
+      <li>Each event-timeline field (<code>accepted_time</code>, <code>closed_time</code>, ...) is pulled from the matching <code>eventLog</code> entry by <code>status</code>, converted from Rista's IST timestamps to UTC for storage.</li>
+      <li>Each line item calls <code>item._sync()</code> and creates/updates a <code>sale_line</code> row, matched by <code>item_number</code>.</li>
+    </ol>
+    <figure class="shot">
+      <img src="screenshots/pos-orders-form.png" alt="Screenshot: a POS Order form showing header amounts, delivery details and the status timeline">
+      <div class="placeholder">Screenshot: a POS Order form — header amounts, delivery details, status timeline, Items tab</div>
+      <figcaption><b>pos-orders-form.png</b></figcaption>
+    </figure>
+  </section>
+
+  <section id="removed">
+    <h2>10. What was built, then removed</h2>
+    <ul>
+      <li><b><code>pos.registry.pulled.record</code></b> (generic, schema-less capture table) + <code>GenericCaptureProcessor</code> + the "Response Repository"/"Build Report" screens built on it — removed <code>19.0.3.17.0</code>.</li>
+      <li><b>A raw-JSON response layer</b> (<code>response_data</code> Json field + 60 computed display fields reading straight from it) — built as a first attempt at "show exactly what Rista sent, no calculation" for Sales Detail, reverted in favor of <code>missing_numbers</code> before it was ever installed.</li>
+      <li><b>"Repository Endpoints"</b> — a list screen duplicating Connect's own Endpoints screen (same rows, same permission gate, same config tab) with zero unique data. Removed; its one genuinely unique piece — <code>Prepare Rista Reporting Endpoints</code>, one-click provisioning of the 3 standard GET endpoints + jobs for a new partner — is kept, reachable from Configuration and from a button on Connect's own endpoint form.</li>
+      <li><b>10 zombie tables</b> from a pre-Rista module design (<code>pos_registry_sale</code>, <code>_sale_line</code>, <code>_sale_payment</code>, <code>_sale_summary</code>, 4 old wizards, <code>live_api_wizard</code>) — no <code>ir_model</code> entry, no code reference anywhere. Dropped by hand.</li>
+      <li><b>Custom import wizards</b> — built, then removed once native Odoo list import (plus the <code>warehouse_code</code>/<code>product_default_code</code> smart-resolve columns) was confirmed to already cover the need.</li>
+    </ul>
+  </section>
+
+  <section id="files">
+    <h2>11. Module reference — <code>harleys_pos_repository</code></h2>
+    <table>
+      <thead><tr><th>File</th><th>Responsibility</th></tr></thead>
+      <tbody>
+        <tr><td><code>models/pos_rista_outlet_master.py</code></td><td>The shared Branch/Brand/Source table, <code>_sync()</code>, Auto-Map</td></tr>
+        <tr><td><code>models/pos_rista_item.py</code></td><td>Item Mapping, <code>_sync()</code>, Auto-Map</td></tr>
+        <tr><td><code>models/pos_rista_sale.py</code></td><td>Sale + Sale Line, the typed <code>upsert()</code> that does most of the real work</td></tr>
+        <tr><td><code>models/sale_line_report.py</code></td><td>Sales Detail's extra related fields on Sale Line + the missing-numbers-aware export override</td></tr>
+        <tr><td><code>models/pos_rista_soldout.py</code>, <code>pos_rista_outlet_status.py</code></td><td>The other two typed reports</td></tr>
+        <tr><td><code>models/processors.py</code></td><td>The three typed processors + the Connect manager extension resolving them</td></tr>
+        <tr><td><code>models/connect_endpoint.py</code></td><td><code>pos_capture</code>/<code>pos_company_id</code>/<code>pos_*_projection</code> fields added onto <code>connect.endpoint</code>, and Rista-specific endpoint prep (<code>_pos_prepare_rista</code>)</td></tr>
+        <tr><td><code>wizard/rista_configuration_wizard.py</code></td><td>Pick an endpoint, turn capture on, optionally provision the 3 standard Rista endpoints in one click</td></tr>
+        <tr><td><code>views/response_columns_views.xml</code></td><td>Sales Detail's 60-column list + the lean 10-column POS Order Lines view</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="limitations">
+    <h2>12. Known limitations / open items</h2>
+    <ul>
+      <li><b>Sales Page job: intermittent, self-healing failure.</b> <code>Scheduled pull 'Sales Page' has no registered response processor</code> fires roughly once per 30&ndash;90 successful runs. Predates this cycle's work by over a week. Not currently losing data &mdash; the next tick retries, and <code>pull_offset_days=2</code> naturally covers small gaps. Root cause not yet found.</li>
+      <li><b><code>round_off_amount</code>'s historical gap</b> &mdash; every row synced before the <code>19.0.3.19.0</code> restore has this value permanently lost (the <code>18.0</code> drop was a plain column drop, nothing preserved first). Marked <code>|round_off_amount|</code> in <code>missing_numbers</code> rather than defaulted to a fake zero; only clears on re-pull.</li>
+      <li><b>Real, live API fields captured but not modeled</b>: <code>totalCost</code>/<code>totalMaterialCost</code>/<code>totalSuppliesCost</code> (zero margin/profitability visibility today), <code>tipAmount</code>, <code>overallRefunds</code>, <code>reprintCount</code>/<code>reprintEvents</code>, and several smaller ones &mdash; none in the vendor's own mapping sheet, deliberately flagged rather than added.</li>
+      <li><b><code>branchState</code>, <code>branchTIN</code>, <code>orderReadyTimestamp</code></b> &mdash; real, consistently-present fields, explicitly deferred rather than added.</li>
+      <li><b>Item Mapping same-name collisions</b> &mdash; see §6; needs <code>variant</code> captured onto the item record.</li>
+      <li><b>277 of 327 items unmapped (85%)</b> &mdash; none are stale; either awaiting a manual/Auto-Map pass or lack an obvious exact code/name match today.</li>
+      <li><b>Migrations for this module were deleted entirely</b> (all 12 version folders) once confirmed no environment other than this dev database has ever installed it, and this dev database's own <code>latest_version</code> is already fully caught up. If this module is ever promoted to a real release process, migrations will need reintroducing from that point forward.</li>
+    </ul>
+  </section>
+
+  <section id="schema-ref">
+    <h2>13. Full column-level schema reference</h2>
+    <p>A complete entity-relationship diagram (every column, every PK/FK, grouped where a table is very wide) plus copy-pasteable DBML for <a href="https://dbdiagram.io" target="_blank" rel="noopener">dbdiagram.io</a>: see <a href="schema-reference.html">schema-reference.html</a>.</p>
+  </section>
+
+  <footer>
+    Internal implementation reference — Harleys Odoo 19 Enterprise. Looking for a non-technical walkthrough instead? See the <a href="user-guide.html">User Guide</a>.
+  </footer>
+
+</div>
+<script type="module" src="../assets/scripts/main.js"></script>
+</body>
+</html>
