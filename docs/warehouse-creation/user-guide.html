@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Standard Operating Procedure (SOP) Creation of Warehouse in Odoo 19</title>
+<link rel="stylesheet" href="../assets/styles/main.css">
+</head>
+<body>
+<div class="page">
+
+  <a class="back-link" href="../index.html">&larr; Back to documentation home</a>
+
+  <header class="doc-head">
+    <p class="eyebrow">User Guide — Harleys Odoo 19 Enterprise</p>
+    <h1>Standard Operating Procedure (SOP) Creation of Warehouse in Odoo 19</h1>
+    <p class="dek">The standard procedure for creating a new outlet warehouse in Odoo 19 by duplicating a similar existing outlet and updating the required configuration.</p>
+    <div class="meta">
+      <span><b>Audience</b> Inventory, outlet and operations staff creating a new outlet warehouse</span>
+      <span><b>Reading time</b> ~8 minutes</span>
+    </div>
+  </header>
+
+  <nav class="toc" aria-labelledby="contents-title">
+    <b id="contents-title">Contents</b>
+    <ol>
+      <li><a href="#purpose">1. Purpose</a></li>
+      <li><a href="#scope">2. Scope</a></li>
+      <li><a href="#prerequisites">3. Prerequisites</a></li>
+      <li><a href="#procedure">4. Procedure</a>
+        <ol>
+          <li><a href="#step-1">Step 1 – Create the Outlet Contact</a></li>
+          <li><a href="#step-2">Step 2 – Create the Warehouse</a></li>
+          <li><a href="#step-3">Step 3 – Verify the Internal Location</a></li>
+          <li><a href="#step-4">Step 4 – Configure Operation Types</a>
+            <ol>
+              <li><a href="#verify-pos-and-transfers">4.1 Verify POS Orders and Internal Transfers</a></li>
+              <li><a href="#create-transit-operation-type">4.2 Create the Transit Operation Type</a></li>
+            </ol>
+          </li>
+        </ol>
+      </li>
+      <li><a href="#final-checklist">5. Final Verification Checklist</a></li>
+      <li><a href="#completion-criteria">6. Completion Criteria</a></li>
+    </ol>
+  </nav>
+
+  <section id="purpose">
+    <h2>1. Purpose</h2>
+    <p>This SOP explains the standard procedure for creating a new outlet warehouse in Odoo 19 by duplicating a similar existing outlet and updating the required configuration.</p>
+  </section>
+
+  <section id="scope">
+    <h2>2. Scope</h2>
+    <p>This procedure applies when a new outlet/warehouse needs to be created in Odoo 19 using an existing outlet and warehouse as a template.</p>
+  </section>
+
+  <section id="prerequisites">
+    <h2>3. Prerequisites</h2>
+    <p>Before starting the warehouse creation process:</p>
+    <ul>
+      <li>Identify an existing outlet in the same company that is similar to the new outlet.</li>
+      <li>Identify the corresponding warehouse of that outlet to use as the duplication template.</li>
+      <li>Keep the new outlet's details available:
+        <ul>
+          <li>Outlet Name</li>
+          <li>Address</li>
+          <li>Email</li>
+          <li>Phone Number</li>
+          <li>Short Name</li>
+        </ul>
+      </li>
+    </ul>
+  </section>
+
+  <section id="procedure">
+    <h2>4. Procedure</h2>
+    <p>Complete the following steps in order. Each checkpoint confirms that the configuration is ready for the next step.</p>
+
+    <section id="step-1">
+      <h3>Step 1 – Create the Outlet Contact</h3>
+      <ol>
+        <li>Go to <b>Contacts</b>.</li>
+        <li>Search for an existing outlet that is similar to the new outlet and belongs to the same company.</li>
+        <li>Open the existing outlet/contact.</li>
+        <li>Use the <b>Duplicate</b> option to create a copy.</li>
+        <li>Update the required outlet details in the duplicated contact:
+          <ul>
+            <li><b>Name</b></li>
+            <li><b>Address</b></li>
+            <li><b>Email</b></li>
+            <li><b>Phone Number</b></li>
+            <li>Other outlet-specific information, if applicable</li>
+          </ul>
+        </li>
+        <li>Save the contact.</li>
+      </ol>
+      <div class="callout">
+        <b>Checkpoint</b>
+        Verify that the new outlet contact contains the correct name, address, email, phone number, and company.
+      </div>
+    </section>
+
+    <section id="step-2">
+      <h3>Step 2 – Create the Warehouse</h3>
+      <ol>
+        <li>Go to <b>Inventory &rarr; Configuration &rarr; Warehouses</b>.</li>
+        <li>Find the warehouse corresponding to the similar existing outlet identified earlier.</li>
+        <li>Open the warehouse.</li>
+        <li>Use the <b>Duplicate</b> option to create a copy.</li>
+        <li>Open the newly duplicated warehouse.</li>
+        <li>Uncheck <b>Manufacture to Resupply</b>.</li>
+        <li>Update the warehouse details:
+          <ul>
+            <li><b>Warehouse Name:</b> Enter the new outlet warehouse name.</li>
+            <li><b>Short Name:</b> Enter the new outlet short name.</li>
+            <li><b>Address:</b> Select the outlet contact created in Step 1.</li>
+          </ul>
+        </li>
+        <li>Save the warehouse.</li>
+      </ol>
+      <div class="callout">
+        <b>Checkpoint</b>
+        Verify that the warehouse name, short name, address, and Manufacture to Resupply setting are correct.
+      </div>
+    </section>
+
+    <section id="step-3">
+      <h3>Step 3 – Verify the Internal Location</h3>
+      <ol>
+        <li>Go to <b>Inventory &rarr; Configuration &rarr; Locations</b>.</li>
+        <li>Search for the internal location associated with the newly created warehouse.</li>
+        <li>Verify that the internal location has been created automatically.</li>
+        <li>Open the internal location.</li>
+        <li>Verify the location configuration.</li>
+        <li>Uncheck <b>Replenishment</b>.</li>
+        <li>Save the location.</li>
+      </ol>
+      <div class="callout">
+        <b>Checkpoint</b>
+        Confirm that the new warehouse has its required internal location and that Replenishment is disabled.
+      </div>
+    </section>
+
+    <section id="step-4">
+      <h3>Step 4 – Configure Operation Types</h3>
+
+      <section id="verify-pos-and-transfers">
+        <h3>4.1 Verify POS Orders and Internal Transfers</h3>
+        <ol>
+          <li>Go to <b>Inventory &rarr; Configuration &rarr; Operation Types</b>.</li>
+          <li>Search for the operation types associated with the newly created warehouse.</li>
+          <li>Verify that the following operation types are available:
+            <ul>
+              <li><b>POS Orders</b></li>
+              <li><b>Internal Transfers</b></li>
+            </ul>
+          </li>
+        </ol>
+      </section>
+
+      <section id="create-transit-operation-type">
+        <h3>4.2 Create the Transit Operation Type</h3>
+        <ol>
+          <li>In <b>Operation Types</b>, find the <b>Transit &rarr; Short Name / Stock</b> operation type of a similar existing outlet.</li>
+          <li>Open the operation type.</li>
+          <li>Use the <b>Duplicate</b> option.</li>
+          <li>Open the duplicated operation type.</li>
+          <li>Update the following fields:
+            <ul>
+              <li><b>Sequence Prefix:</b> Change it to the new outlet's short name.</li>
+              <li><b>Warehouse:</b> Select the newly created warehouse.</li>
+              <li><b>Destination Location:</b> Select the correct destination location for the new outlet.</li>
+            </ul>
+          </li>
+          <li>Verify that the source and destination locations are configured correctly.</li>
+          <li>Save the operation type.</li>
+        </ol>
+        <div class="callout">
+          <b>Checkpoint</b>
+          Verify that the operation type is linked to the correct warehouse, sequence prefix, and destination location.
+        </div>
+      </section>
+    </section>
+  </section>
+
+  <section id="final-checklist">
+    <h2>5. Final Verification Checklist</h2>
+    <p>Before considering the warehouse creation complete, verify the following:</p>
+    <table>
+      <caption>Final verification checklist</caption>
+      <thead>
+        <tr>
+          <th scope="col">No.</th>
+          <th scope="col">Verification</th>
+          <th scope="col">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><th scope="row">1</th><td>New outlet contact created</td><td><input type="checkbox" aria-label="Mark New outlet contact created as complete"></td></tr>
+        <tr><th scope="row">2</th><td>Outlet name is correct</td><td><input type="checkbox" aria-label="Mark Outlet name is correct as complete"></td></tr>
+        <tr><th scope="row">3</th><td>Outlet address is correct</td><td><input type="checkbox" aria-label="Mark Outlet address is correct as complete"></td></tr>
+        <tr><th scope="row">4</th><td>Email and phone number are correct</td><td><input type="checkbox" aria-label="Mark Email and phone number are correct as complete"></td></tr>
+        <tr><th scope="row">5</th><td>Warehouse created by duplicating a similar warehouse</td><td><input type="checkbox" aria-label="Mark Warehouse created by duplicating a similar warehouse as complete"></td></tr>
+        <tr><th scope="row">6</th><td>Warehouse name is correct</td><td><input type="checkbox" aria-label="Mark Warehouse name is correct as complete"></td></tr>
+        <tr><th scope="row">7</th><td>Warehouse short name is correct</td><td><input type="checkbox" aria-label="Mark Warehouse short name is correct as complete"></td></tr>
+        <tr><th scope="row">8</th><td>Correct outlet contact selected as warehouse address</td><td><input type="checkbox" aria-label="Mark Correct outlet contact selected as warehouse address as complete"></td></tr>
+        <tr><th scope="row">9</th><td>Manufacture to Resupply is unchecked</td><td><input type="checkbox" aria-label="Mark Manufacture to Resupply is unchecked as complete"></td></tr>
+        <tr><th scope="row">10</th><td>Internal location created/available</td><td><input type="checkbox" aria-label="Mark Internal location created or available as complete"></td></tr>
+        <tr><th scope="row">11</th><td>Replenishment is unchecked on the internal location</td><td><input type="checkbox" aria-label="Mark Replenishment is unchecked on the internal location as complete"></td></tr>
+        <tr><th scope="row">12</th><td>POS Orders operation type verified</td><td><input type="checkbox" aria-label="Mark POS Orders operation type verified as complete"></td></tr>
+        <tr><th scope="row">13</th><td>Internal Transfers operation type verified</td><td><input type="checkbox" aria-label="Mark Internal Transfers operation type verified as complete"></td></tr>
+        <tr><th scope="row">14</th><td>Transit operation type duplicated from a similar outlet</td><td><input type="checkbox" aria-label="Mark Transit operation type duplicated from a similar outlet as complete"></td></tr>
+        <tr><th scope="row">15</th><td>Sequence prefix updated with the new short name</td><td><input type="checkbox" aria-label="Mark Sequence prefix updated with the new short name as complete"></td></tr>
+        <tr><th scope="row">16</th><td>Correct warehouse selected in the operation type</td><td><input type="checkbox" aria-label="Mark Correct warehouse selected in the operation type as complete"></td></tr>
+        <tr><th scope="row">17</th><td>Correct destination location selected</td><td><input type="checkbox" aria-label="Mark Correct destination location selected as complete"></td></tr>
+        <tr><th scope="row">18</th><td>Source and destination configuration verified</td><td><input type="checkbox" aria-label="Mark Source and destination configuration verified as complete"></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="completion-criteria">
+    <h2>6. Completion Criteria</h2>
+    <p>The warehouse creation is considered complete only after:</p>
+    <ul>
+      <li>The outlet contact has been created and verified.</li>
+      <li>The new warehouse has been created and configured.</li>
+      <li>The internal location has been verified and configured.</li>
+      <li>POS Orders and Internal Transfers operation types have been verified.</li>
+      <li>The required Transit operation type has been duplicated and correctly configured.</li>
+      <li>All final verification checklist items have been completed.</li>
+    </ul>
+  </section>
+
+  <footer>
+    User guide — Harleys Odoo 19 Enterprise. <a href="user-guide.pdf">Download the source SOP PDF</a>.
+  </footer>
+
+</div>
+<script type="module" src="../assets/scripts/main.js"></script>
+</body>
+</html>
