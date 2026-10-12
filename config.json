@@ -24,6 +24,15 @@
   },
   "applications": [
     {
+      "name": "Harley's GRN App (Android)",
+      "url": "downloads/harleys-grn.apk",
+      "download": "harleys-grn.apk",
+      "icon": "phone",
+      "status": "Online",
+      "environment": "Production · harleys.odoo.com · v0.1.0 · 20.6 MB",
+      "featured": true
+    },
+    {
       "name": "Harleys Projects Board",
       "url": "https://github.com/users/harleystech/projects/1/views/1",
       "icon": "board",
@@ -58,6 +67,13 @@
     }
   ],
   "recentUpdates": [
+    {
+      "date": "2026-10-12",
+      "title": "Harley's GRN app for Android",
+      "description": "Outlet app to acknowledge receipts (POD-Ack) and hand back returnable containers and excess stock. Connected to production (harleys.odoo.com). Download the APK from the app card and allow installing from this source when Android asks.",
+      "link": "downloads/harleys-grn.apk",
+      "linkLabel": "Download the APK"
+    },
     {
       "date": "2026-09-25",
       "title": "Warehouse Creation SOP published",

@@ -27,13 +27,17 @@ export function renderApplications(container, applications = [], defaultUrl = '#
     const card = document.createElement('a');
     card.className = 'app-card' + (isFeatured ? ' is-featured' : '');
     card.href = app.url || defaultUrl;
-    card.target = '_blank';
     card.rel = 'noopener noreferrer';
+    if (app.download) {
+      card.setAttribute('download', app.download); // e.g. an APK: save it, don't open a tab
+    } else {
+      card.target = '_blank';
+    }
     card.setAttribute('role', 'listitem');
-    card.setAttribute('aria-label', `Launch ${app.name || 'application'}`);
+    card.setAttribute('aria-label', `${app.download ? 'Download' : 'Launch'} ${app.name || 'application'}`);
 
     const launchMarkup = `<span class="app-card__launch">
-          Launch ${getIcon('external')}
+          ${app.download ? `Download ${getIcon('download')}` : `Launch ${getIcon('external')}`}
         </span>`;
     // const launchMarkup = hasMultiLink
     //   ? `<button type="button" class="app-card__launch app-card__launch--btn" aria-haspopup="true" aria-expanded="false">
