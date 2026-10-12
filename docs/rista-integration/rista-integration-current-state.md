@@ -132,32 +132,28 @@ response are unlinked, new ones created, matched ones updated.
 
 134,309 rows live today.
 
-### `pos_repository_rista_sale_line` — POS Order Lines / Sales Detail (one row per item)
+### `pos_repository_rista_sale_line` — POS Order Lines (one row per item)
 
-~40 fields: the item's own data (`sku_code`, `quantity`, tax breakdown,
-KOT number/status/timestamp, `options` raw JSON, `variant`) plus ~15
-related+stored header fields (`branch_id`, `channel`, `source`,
-`payment_mode`, etc.) so this table can stand alone for reporting without
-a join back to the header. 26,535 rows live today.
+The sheet's line: `sale_id` (Order_ID), `item_number` (Line_ID), `item_id` (link to Item;
+code and name live there), quantity, unit price, gross, net, discount, discount reason, plus the
+item-level GST (`cgst_*`, `sgst_*`), `tax_amount`, `item_total_amount` and `variant`.
+Only the order fields reports group and filter by are copied (stored related): `branch_id`,
+`invoice_day`, `status`, plus `warehouse_id`/`product_id` from the Outlet/Item mapping. Everything
+else (payment, channel, source, amounts of the bill) is one click away through Order - copying the
+bill's amounts onto every line made sums over lines count each order once per item.
 
 ### `pos_repository_rista_soldout` — Sold Out History
 
-Keyed by `event_key`, a sha256 hash of the endpoint's own configured
-Identity Fields (branch, SKU, item type, status type, event type, event
-date) — deliberately broader than the vendor sheet's own
-`unique(Source,Branch,Item,EventDate)`, so e.g. an item going OUT then
-back IN the same day/SKU is kept as two distinct events, not collapsed.
-21,508 rows live today.
+The sheet's row: `branch_id`, `item_id` (links), `event_date`, `event_type` (Item Status, IN/OUT)
+and `user_id`. Unique on `(partner, branch, item, event_date, event_type)` - an item going OUT and
+back IN is two events. No copied codes, names or hash column. The response has no order source, so
+the sheet's Source is the connection (`partner_id`).
 
-### `pos_repository_rista_outlet_status` — Outlet Status (live snapshot, not history)
+### Outlet Status - removed
 
-Keyed by `(partner_id, branch_code, channel, order_source)` —
-deliberately wider than the sheet's own `(Source, Branch, EventDate)`,
-since a branch shows a different status per aggregator channel. One
-current row per key, overwritten on every poll. 230 rows live today.
-`status_value` reads `row.get("status") or row.get("statusValue")` — the
-sheet calls the field `statusValue`, but Rista's real live response for
-this account sends plain `status`.
+Removed from the code in 19.0.3.21.0 (table, screens, processor, endpoint flag, sample) because Rista's API for it
+is not confirmed. Once it is, rebuild it from the sheet (branch, order source, channel, event date, status) as a
+new typed table with links to Outlet Master.
 
 ## 5. Screens
 
@@ -165,14 +161,63 @@ this account sends plain `status`.
 |---|---|---|
 | POS Orders | one row per invoice | Order-level report, unchanged since first built |
 | POS Order Lines | one row per item | Exactly the vendor sheet's 10 `POS_Order_Line` columns |
-| Sales Detail | one row per item | The vendor sheet's full 60-column `POS_Order` row, all columns default-visible; its own search view with **no sidebar** (a 60-column table plus a persistent searchpanel produced a second, page-level horizontal scrollbar) |
 | Sold Out History, Outlet Status | typed reports | Standard list/pivot/graph |
 | Outlet Mapping, Item Mapping | maintenance | Branch↔warehouse and SKU↔product mapping, both natively Excel-importable |
+| Endpoint Capture | configuration | How each pull endpoint's response is stored; edits `connect.endpoint` directly (no tab on Connect's own form). Connect managers only |
+| Response Mapping | configuration | The four tables under their menu names; open one to see/edit every column (type, response path, label, list display); edits apply on app upgrade |
 
 Access: `harleys_connect.group_connect_manager` for full/config access,
 or the narrower `group_pos_repository_reports` (view-only on the 4 typed
 reports, no Connect access implied) for a business user who only needs to
 look at sales data.
+
+### The table schema and response mapper
+
+The four typed tables are described by data: **POS Repository →
+Configuration → Response Mapping** lists them under their menu names (POS
+Orders, POS Order Lines, Sold Out History, Outlet Status); opening one shows
+every database column (live DB type, response path, label, list display)
+in an editable list. Models `pos.repository.table` and
+`pos.repository.column`; seeds in `data/tables.xml`, `data/columns_*.xml`
+(loaded once, never overwritten).
+
+* **Editable schema** columns (56 plain data columns) are not declared in
+  Python: `models/schema_fields.py` adds them to their model while the
+  registry is built. Name, data type, index, path, label and list display
+  are editable; add and drop are supported. **Code-defined** columns
+  (identity, relations, audit, anything other code uses) allow path, label
+  and list display only.
+* **Edits apply on app upgrade.** Until then the running app uses the
+  columns as the database has them (`applied_name`/`applied_ttype`). On
+  upgrade `_auto_init` (mixin in `pos_rista_common.py`) renames (data kept),
+  retypes with a pre-check, creates, and drops (tombstone row, so a seed
+  cannot resurrect it). A lossy type change stops the upgrade with counts and
+  samples unless *Allow Data Loss* is ticked. A safety net aborts if a
+  column present in the database would be missing from the model.
+* Guards: snake_case names, ORM/SQL reserved names rejected, explicit table of
+  allowed conversions (char/text/integer/float/boolean/date/datetime),
+  rename/retype/drop blocked while a static view (pivot/graph/search) or saved
+  filter names the column. List and form views are generated from the column
+  configuration.
+* **Response Fields** tab + picker: each table lists every response field
+  Rista has been seen to send (learned from `data/samples/*.json`, Check POS
+  Mapping and real pulls; `pos.repository.response.field`), with the column
+  it fills. Remap a column by picking another entry in its *Response Field*
+  dropdown. Sheet reconciliation: the sheet's Sale Page row is 63 cells = 60
+  fields + 3 blank spacers; 7 are item-level (lines), 53 order-level - all 53 are
+  columns of `pos_repository_rista_sale`; Source, Brand and Branch are links (`source_id`,
+  `brand_id`, `branch_id`) to Outlet Master, never copied text (65 columns in all).
+  Item Nature, KOT Number/Status/Timestamp, Options and Factored Discount hold the
+  **first item's** value (`items[0].…`, not a sum); the line keeps only the sheet's line columns.
+* Path syntax: `a.b`, `list[0].x`, `list[name=CGST].amount`,
+  `list[].name` + join, `a|b` alternatives, `$scope.branch`. `missing_numbers`
+  is generated from the mapping.
+* Workflow when Rista changes a field: Test the endpoint in Connect → **Check
+  POS Mapping** (or paste JSON into Check Mapping) → Mapped / Unmapped /
+  Not in this sample → **Add Column** on an unmapped field → upgrade the app.
+  History is not backfilled (no raw response stored); only re-pulled days
+  fill a new column. `tests/fixtures/golden_typed_output.json` pins the exact
+  mapped output.
 
 ## 6. The `round_off_amount` historical gap
 
@@ -321,3 +366,42 @@ terminal alongside Rista.
 - **277 of 327 items unmapped (85%)** — checked, none are stale/dead SKUs;
   they're either awaiting a manual/Auto-Map pass or don't have an obvious
   exact code/name match in the current product catalog.
+
+
+## 19.0.3.21.0 - schema cleaned to the Relational Mapping sheet
+
+* Branch, brand, source and item are **links** (Outlet Master / Item, `ondelete=restrict`); the copied
+  `source`, `brand_name`, `branch_code`, `branch_name`, `sku_code`, `item_name`, `category_name`,
+  `order_source`, `event_key`, `event_business_day`, `warehouse_code`, `product_default_code` and the
+  sold-out `measuring_unit`/`category_types`/`item_type`/`status_type`/`user_name` columns are gone. The
+  link's response path (and name path) is configured on its Columns row like any other column.
+* Order Lines dropped ~20 copied order columns (kept: branch, day, status, warehouse, product) and the
+  item-level KOT/nature/options/factored-discount columns (the sheet keeps them on the order).
+* Sold-out status mapping fixed (`event_type` = `eventType`); status is a daily history; every table has
+  its unique key on links, and required links (branch on orders, branch+item on sold-out).
+* `pre-migrate` backfills sold-out links, repairs the swapped status/type rows, clears the duplicate
+  `pos_registry_*` indexes and marks the retired editable columns for dropping.
+
+* **Outlet Status removed** (see above): `pre-migrate` drops its table, stops its Connect job and clears its
+  configuration. The Outlet Status Connect endpoint itself is left for an administrator to delete. The unused
+  endpoint settings `pos_snapshot` and `pos_identity_paths` were removed with it.
+* **Delete column**: a trash button with a risk warning (the column and all its data are deleted at the next
+  upgrade; Undo until then); the old "Drop on Upgrade" checkbox is gone. Columns that a pivot/graph/search view
+  or saved filter still names cannot be marked.
+* **Pull flow (Connect)**, only for jobs with Pull Offset Days, on the job's own schedule: `last_completed_day`
+  bookmark - a run pulls its own day plus any earlier day (up to 3 back) left incomplete, and the bookmark moves only
+  over days completed in order; a failing branch no longer stops the others (the run still fails, its day stays
+  open); a failed call's log is committed before the run fails; a row that cannot be stored is skipped and the log
+  marked Partial (job state Partial); the Sales endpoint retries 429/5xx/timeouts (`idempotent_safe_retry`).
+  Not changed: interval and offset stay whatever the job says in the UI.
+
+## 19.0.3.22.0 - Check Mapping removed
+
+* The Check POS Mapping wizard and its two transient tables (`pos_repository_response_map_check`, `..._line`) are
+  gone: the Response Fields list (learned from every pull and Test run) already shows what is mapped, and each
+  unmapped field has an **Add as Column** button (name and type are guessed from the sample; the column is
+  created in the database at the next upgrade). The "Times Seen" counter went with it.
+* The Columns tab no longer lists Odoo's audit columns (create/write user and date); it shows the sheet's fields
+  plus ID and the connection.
+* `pre-migrate` 19.0.3.22.0 drops the two wizard tables and their screens. POS tables are now 10: report data 3,
+  lookups 2, schema/mapping 3 (`table`, `column`, `response_field`), wizards 2 (Prepare, Export Seed).

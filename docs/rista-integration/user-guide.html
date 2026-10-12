@@ -25,7 +25,7 @@
     <b>Contents</b>
     <ol>
       <li><a href="#what">What this is, and where to find it</a></li>
-      <li><a href="#reports">The five reports, and which one to use</a></li>
+      <li><a href="#reports">The four reports, and which one to use</a></li>
       <li><a href="#mapping">Outlet Mapping and Item Mapping</a></li>
       <li><a href="#blanks">Why some cells are blank</a></li>
       <li><a href="#access">Who can see what</a></li>
@@ -44,13 +44,12 @@
   </section>
 
   <section id="reports">
-    <h2>2. The five reports, and which one to use</h2>
+    <h2>2. The four reports, and which one to use</h2>
     <table>
       <thead><tr><th>Report</th><th>Shows</th><th>Use it when...</th></tr></thead>
       <tbody>
         <tr><td><b>POS Orders</b></td><td>One row per order/invoice</td><td>You want order-level totals — how many orders, total sales, by branch or day</td></tr>
-        <tr><td><b>POS Order Lines</b></td><td>One row per item sold</td><td>You want a lean, focused view of what sold — quantity, price, discount, nothing else</td></tr>
-        <tr><td><b>Sales Detail</b></td><td>One row per item sold, every available column</td><td>You need a specific field not shown on POS Order Lines — this has everything, with columns you don't need hidden behind the column-picker (top-right of the list)</td></tr>
+        <tr><td><b>POS Order Lines</b></td><td>One row per item sold</td><td>You want to see what sold — item, quantity, price, discount — one row per item</td></tr>
         <tr><td><b>Sold Out History</b></td><td>Items that went out of stock and came back</td><td>Checking how often, and for how long, a specific item was unavailable</td></tr>
         <tr><td><b>Outlet Status</b></td><td>Current status per branch and delivery channel</td><td>A live snapshot — not a history — of whether a branch is currently open on Zomato, Swiggy, etc.</td></tr>
       </tbody>
@@ -106,7 +105,7 @@
 
   <section id="access">
     <h2>5. Who can see what</h2>
-    <p>Viewing the five reports above only requires the <b>Rista Reports Viewer</b> permission — a manager can grant this on its own, without also handing out access to the technical Connect/integration settings. Outlet Mapping, Item Mapping and the Configuration menu require the broader Connect Manager permission, since those affect how data is captured.</p>
+    <p>Viewing the four reports above only requires the <b>Rista Reports Viewer</b> permission — a manager can grant this on its own, without also handing out access to the technical Connect/integration settings. Outlet Mapping, Item Mapping and the Configuration menu require the broader Connect Manager permission, since those affect how data is captured.</p>
   </section>
 
   <section id="faq">
@@ -122,10 +121,6 @@
     <div class="callout warn">
       <b>An item or branch is unmapped — does that break the report?</b>
       No, the order/item still shows up with all its own data. Only the link to a specific Odoo warehouse or product is missing until it's mapped, which mainly matters if you're trying to cross-reference against inventory or product-level reports elsewhere in Odoo.
-    </div>
-    <div class="callout warn">
-      <b>Why do POS Order Lines and Sales Detail look similar?</b>
-      They show the same underlying items, just with a different number of columns — POS Order Lines is deliberately kept to the 10 essentials, Sales Detail has everything available in case you need a less common field.
     </div>
   </section>
 

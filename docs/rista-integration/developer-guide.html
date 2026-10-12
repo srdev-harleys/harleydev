@@ -32,6 +32,7 @@
       <li><a href="#outlet-master">Outlet Master: one shared table, not three</a></li>
       <li><a href="#item-mapping">Item Mapping: how it's populated, and its one display gap</a></li>
       <li><a href="#missing-numbers">The missing-vs-zero problem</a></li>
+      <li><a href="#mapper">Table schema and response mapper</a></li>
       <li><a href="#screens">Screens and permissions</a></li>
       <li><a href="#walkthrough">Walkthrough: following one order end to end</a></li>
       <li><a href="#removed">What was built, then removed</a></li>
@@ -106,7 +107,7 @@
       </tbody>
     </table>
 
-    <h3>pos_repository_rista_sale_line — POS Order Lines / Sales Detail (one row per item)</h3>
+    <h3>pos_repository_rista_sale_line — POS Order Lines (one row per item)</h3>
     <p>~40 fields: the item's own data (<code>sku_code</code>, <code>quantity</code>, tax breakdown, KOT number/status/timestamp, <code>options</code> raw JSON, <code>variant</code>) plus ~15 related+stored header fields so this table stands alone for reporting without a join back to the header.</p>
 
     <h3>pos_repository_rista_soldout — Sold Out History</h3>
@@ -150,7 +151,31 @@
   <section id="missing-numbers">
     <h2>7. The missing-vs-zero problem</h2>
     <p>Every numeric field extraction used to be <code>row.get("fieldName") or 0.0</code> — this collapses "Rista didn't send this field" and "Rista sent exactly 0" into the identical stored value, with no way to tell them apart later.</p>
-    <p><code>missing_numbers</code> (Char, on both Sale and Sale Line) fixes this without changing field types or losing the ability to sum/pivot: at upsert time, <b>before</b> any zero-fallback, it records a pipe-delimited list of which numeric field names were genuinely absent this pull (<code>|round_off_amount|unit_price|</code>). The stored Float itself is always a real number. The UI (<code>invisible="'|field|' in missing_numbers"</code>) and CSV/XLSX export (<code>_export_rows</code> override in <code>models/sale_line_report.py</code>) both blank the cell specifically where it's flagged — the number never lies, the display honestly shows "we don't know" instead of a fake zero.</p>
+    <p><code>missing_numbers</code> (Char, on both Sale and Sale Line) fixes this without changing field types or losing the ability to sum/pivot: at upsert time, <b>before</b> any zero-fallback, the response mapper (next section) records a pipe-delimited list of which numeric field names were genuinely absent this pull (<code>|round_off_amount|unit_price|</code>). The stored Float itself is always a real number. The UI (<code>invisible="'|field|' in missing_numbers"</code>) and CSV/XLSX export (<code>_export_rows</code> override on Sale Line in <code>models/pos_rista_sale.py</code>) both blank the cell specifically where it's flagged — the number never lies, the display honestly shows "we don't know" instead of a fake zero.</p>
+  </section>
+
+
+  <section id="mapper">
+    <h2>7a. The table schema and response mapper: changing columns, types and mappings</h2>
+    <p>The four typed tables (POS Orders, POS Order Lines, Sold Out History, Outlet Status) are described by data, not only by Python: <b>POS Repository &rarr; Configuration &rarr; Response Mapping</b> lists them under their menu names, and opening one shows <b>every database column</b> of its table &mdash; live database type, response path, label and where it appears in the list &mdash; in an editable list. Two models back it: <code>pos.repository.table</code> (one per report) and <code>pos.repository.column</code> (one per column). Seeds ship in <code>data/tables.xml</code> and <code>data/columns_*.xml</code> (loaded once; your edits are never overwritten).</p>
+    <table>
+      <thead><tr><th>Column kind</th><th>What you can edit</th></tr></thead>
+      <tbody>
+        <tr><td><b>Editable schema</b> (69 plain data columns)</td><td>Everything: database name, data type, index, response path, label, list display &mdash; or add a new column, or drop one. Not declared in Python: <code>models/schema_fields.py</code> adds them to their model while the registry is built.</td></tr>
+        <tr><td><b>Code-defined</b> (identity, relations, audit, and columns other code depends on)</td><td>Response path, label and list display only. Name, type and index are owned by the code.</td></tr>
+      </tbody>
+    </table>
+    <p><b>Response Fields tab and picker.</b> Next to Columns, each table has a <b>Response Fields</b> tab listing every field Rista has been seen to send (about 240 for an order, 60 for an item), with an example value and which column, if any, it fills. The list is learned, not typed: seeded from <code>data/samples/*.json</code>, extended by Check POS Mapping, and extended by every real pull (new paths only), so a field Rista starts sending appears without anyone looking (<i>POS Repository &rarr; Configuration &rarr; Response Fields</i> shows the not-yet-mapped ones across tables). To remap a column, open its table and pick another entry in the column's <b>Response Field</b> dropdown; the response path is filled in. Repeated entries are offered in ready-to-use forms (<code>taxes[name=CGST].amount</code>, <code>eventLog[status=Voided].eventDate</code>, <code>items[0].kotNumber</code> for the first item, <code>discounts[].name</code> to join all). Combined paths (<code>a|b</code>) stay editable as text. The table form uses the full screen width.</p>
+    <p><b>Vendor sheet reconciliation.</b> The sheet's Sale Page row has 63 cells: 60 field names plus 3 blank spacer cells. Of the 60, 7 are item-level (skuCode, quantity, unitPrice, grossAmount, netAmount, discountAmount, discountReason &mdash; POS Order Lines) and 53 are order-level; all 53 are columns of <code>pos_repository_rista_sale</code>. The table has 69 columns: the internal ID, those 53, and 15 supporting ones (5 ownership/audit, <code>branch_id</code>/<code>brand_id</code>/<code>source_id</code>, <code>missing_numbers</code>, and <code>branch_name</code>, <code>invoice_date</code> and four invoice totals). Item Nature, KOT Number/Status/Timestamp, Options and Factored Discount are sent per item, so the order holds the <i>first item's</i> value (<code>items[0]</code>, not a sum); every item's own value stays on POS Order Lines.</p>
+    <div class="callout">
+      <p><b>Edits apply on upgrade.</b> Changing a name, type or index, adding a column, or ticking <i>Drop on Upgrade</i> is only <i>recorded</i> (the table screen shows "n schema changes waiting"). Until the POS Repository app is upgraded the running app keeps using the columns exactly as the database has them. On upgrade, before Odoo reconciles the table, <code>_auto_init</code> renames columns (data kept), converts types with a pre-check, creates new columns, and drops removed ones (leaving an inactive tombstone row so a seed cannot bring them back). A type change that would lose data (e.g. text &rarr; number with values like "N/A") <b>stops the upgrade with the row count and samples</b> and changes nothing; tick <i>Allow Data Loss</i> on the column to convert those values to empty instead.</p>
+    </div>
+    <p>Guards: names must be lowercase snake_case and not clash with ORM/SQL names; supported types are char, text, integer, float, boolean, date, datetime, with an explicit table of allowed conversions; a column named by a static view (pivot, graph, search) or a saved filter cannot be renamed, retyped or dropped until those are edited &mdash; the message lists them; a safety net aborts the upgrade if a column that exists in the database would be missing from the model (Odoo would otherwise drop its data). List and form views of the four tables are generated from the column configuration (order, optional/hidden, footer total, "blank when missing"), so they never go stale.</p>
+    <p>Response path syntax: <code>a.b.c</code> nested keys; <code>list[0].x</code> by index; <code>list[name=CGST].amount</code> first element matching a key; <code>list[].name</code> every element (with <i>Join names</i>); <code>a|b</code> first present alternative wins; <code>$scope.branch</code> a request dimension. Numeric columns whose path is absent are stored as 0 and named in <code>missing_numbers</code> automatically.</p>
+    <div class="callout">
+      <p><b>When Rista changes a response field:</b> run the API from the endpoint's Test screen in Connect and press <b>Check POS Mapping</b> (or paste JSON into <b>Check Mapping</b> on Endpoint Capture). Every response field is listed as <i>Mapped</i> (to which column), <i>Unmapped (new)</i> with a suggested table, column name and type, or a mapped path <i>Not in this sample</i>. <b>Add Column</b> creates the column and its mapping; upgrade the app to create it in the database. <b>Export as XML</b> on a table gives a snapshot of its column definitions in seed format.</p>
+    </div>
+    <p>What deliberately stays in Python: row identity and matching (<code>invoiceNumber</code>, distinct <code>itemNumber</code>, stable line IDs, the sold-out event key, the status match key), the Outlet Master/Item <code>_sync()</code> lookups, and the branch-name display lookup. <code>tests/fixtures/golden_typed_output.json</code> pins the exact mapped output for real sample orders. Historical rows are not backfilled when a mapping changes &mdash; no raw response is stored, so only re-pulled days pick up a new or re-pathed column.</p>
   </section>
 
   <section id="screens">
@@ -160,15 +185,16 @@
       <tbody>
         <tr><td>POS Orders</td><td>one row per invoice</td><td>Order-level report</td></tr>
         <tr><td>POS Order Lines</td><td>one row per item</td><td>Exactly the vendor sheet's 10 <code>POS_Order_Line</code> columns</td></tr>
-        <tr><td>Sales Detail</td><td>one row per item</td><td>The vendor sheet's full 60-column <code>POS_Order</code> row, all columns default-visible; its own search view with no sidebar (a 60-column table plus a persistent searchpanel produced a second, page-level horizontal scrollbar)</td></tr>
         <tr><td>Sold Out History, Outlet Status</td><td>typed reports</td><td>Standard list/pivot/graph</td></tr>
         <tr><td>Outlet Mapping, Item Mapping</td><td>maintenance</td><td>Branch&harr;warehouse and SKU&harr;product mapping, both natively Excel-importable</td></tr>
+        <tr><td>Endpoint Capture</td><td>configuration</td><td>How each pull endpoint's response is stored (rows path, identity fields, request dimensions, typed table); edits <code>connect.endpoint</code> directly. Connect managers only.</td></tr>
+        <tr><td>Response Mapping</td><td>configuration</td><td>The four tables under their menu names; open one to see and edit every column (type, response path, label, list display) &mdash; edits apply on app upgrade</td></tr>
       </tbody>
     </table>
     <p>Access: <code>harleys_connect.group_connect_manager</code> for full/config access, or the narrower <code>group_pos_repository_reports</code> (view-only on the 4 typed reports, no Connect access implied) for a business user who only needs to look at sales data.</p>
     <figure class="shot">
       <img src="screenshots/rista-reports-menu.png" alt="Screenshot: POS Repository app, Rista Reports menu expanded">
-      <div class="placeholder">Screenshot: POS Repository app, Rista Reports menu expanded — POS Orders, POS Order Lines, Sales Detail, Sold Out History, Outlet Status</div>
+      <div class="placeholder">Screenshot: POS Repository app, Rista Reports menu expanded — POS Orders, POS Order Lines, Sold Out History, Outlet Status</div>
       <figcaption><b>rista-reports-menu.png</b></figcaption>
     </figure>
   </section>
@@ -209,12 +235,19 @@
         <tr><td><code>models/pos_rista_outlet_master.py</code></td><td>The shared Branch/Brand/Source table, <code>_sync()</code>, Auto-Map</td></tr>
         <tr><td><code>models/pos_rista_item.py</code></td><td>Item Mapping, <code>_sync()</code>, Auto-Map</td></tr>
         <tr><td><code>models/pos_rista_sale.py</code></td><td>Sale + Sale Line, the typed <code>upsert()</code> that does most of the real work</td></tr>
-        <tr><td><code>models/sale_line_report.py</code></td><td>Sales Detail's extra related fields on Sale Line + the missing-numbers-aware export override</td></tr>
+        <tr><td><code>models/schema_fields.py</code></td><td>Adds the data-defined columns to their models while the registry is built (applied definitions normally, edited ones during an upgrade); seed bootstrap</td></tr>
+        <tr><td><code>models/pos_repository_schema.py</code></td><td><code>pos.repository.table</code>/<code>column</code>: validation, type-conversion rules, the mapper (<code>_apply</code>), generated list/form views, labels, export</td></tr>
+        <tr><td><code>models/pos_rista_common.py</code></td><td>Mixin on the four typed models: <code>_auto_init</code> applies pending schema changes on upgrade, plus label and view hooks</td></tr>
+        <tr><td><code>models/response_path.py</code></td><td>The response-path resolver</td></tr>
+        <tr><td><code>models/response_field.py</code></td><td>The response-field catalog (learned paths, mapped/unmapped, seed from <code>data/samples/</code>)</td></tr>
+        <tr><td><code>models/response_map_check.py</code>, <code>connect_test_wizard.py</code></td><td>Check Mapping (compare a real response to the mapper) and its button on Connect's Test screen</td></tr>
+        <tr><td><code>data/tables.xml</code>, <code>columns_*.xml</code></td><td>Seed definition of the tables and columns (loaded once, never overwritten)</td></tr>
         <tr><td><code>models/pos_rista_soldout.py</code>, <code>pos_rista_outlet_status.py</code></td><td>The other two typed reports</td></tr>
         <tr><td><code>models/processors.py</code></td><td>The three typed processors + the Connect manager extension resolving them</td></tr>
-        <tr><td><code>models/connect_endpoint.py</code></td><td><code>pos_capture</code>/<code>pos_company_id</code>/<code>pos_*_projection</code> fields added onto <code>connect.endpoint</code>, and Rista-specific endpoint prep (<code>_pos_prepare_rista</code>)</td></tr>
-        <tr><td><code>wizard/rista_configuration_wizard.py</code></td><td>Pick an endpoint, turn capture on, optionally provision the 3 standard Rista endpoints in one click</td></tr>
-        <tr><td><code>views/response_columns_views.xml</code></td><td>Sales Detail's 60-column list + the lean 10-column POS Order Lines view</td></tr>
+        <tr><td><code>models/connect_endpoint.py</code></td><td><code>pos_capture</code>/<code>pos_*_projection</code> fields added onto <code>connect.endpoint</code>, and Rista-specific endpoint prep (<code>_pos_prepare_rista</code>)</td></tr>
+        <tr><td><code>wizard/rista_configuration_wizard.py</code></td><td>Dialog behind "Prepare Rista Reporting Endpoints" (provisions the 3 standard Rista endpoints in one click)</td></tr>
+        <tr><td><code>views/connect_endpoint_views.xml</code></td><td>Endpoint Capture list/form on <code>connect.endpoint</code> (no tab on Connect's own form)</td></tr>
+        <tr><td><code>views/response_map_views.xml</code></td><td>Response Mapping (table list, table form with the editable column list), export and Check Mapping dialogs</td></tr>
       </tbody>
     </table>
   </section>
