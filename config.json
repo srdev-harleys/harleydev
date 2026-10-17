@@ -29,7 +29,7 @@
       "download": "harleys-grn.apk",
       "icon": "phone",
       "status": "Online",
-      "environment": "Production · harleys.odoo.com · v0.1.0 · 20.6 MB",
+      "environment": "Production · harleys.odoo.com · v0.2.0 · 19.4 MB",
       "featured": true
     },
     {
@@ -67,6 +67,13 @@
     }
   ],
   "recentUpdates": [
+    {
+      "date": "2026-10-17",
+      "title": "Harley's GRN app v0.2.0",
+      "description": "Add New Items that came in but are not on the transfer, extra qty is kept apart as Excess Items, and a summary before signing. Plus decimal quantities in the batch sheet, faster product and batch search, and safer offline saving. Download and install over the old app; your setup stays.",
+      "link": "downloads/harleys-grn.apk",
+      "linkLabel": "Download v0.2.0"
+    },
     {
       "date": "2026-10-12",
       "title": "Harley's GRN app for Android",
