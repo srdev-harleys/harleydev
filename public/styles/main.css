@@ -12,6 +12,7 @@
 /* @import url("dropdown.css"); */ /* 9b. Multi-link dropdown popovers — disabled, Dev Link is a single link again */
 @import url("info-cards.css"); /* 10. Information cards              */
 @import url("updates.css");    /* 11. Recent updates                 */
+@import url("daily-updates.css"); /* 11b. Daily Updates page (updates.html) */
 @import url("footer.css");     /* 12. Footer                         */
 @import url("responsive.css"); /* 13. Mobile breakpoints             */
 @import url("accessibility.css"); /* 14. Reduced motion / focus      */

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Daily Updates — Harleys Fine Baking ODOO DEV</title>
+  <meta name="description" content="Team MoM, EOD and task analytics for the Harleys ODOO DEV team, live from Odoo." />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#F5D1D8" />
+
+  <link rel="icon" type="image/png" href="assets/favicon.png" />
+  <link rel="apple-touch-icon" href="assets/favicon.png" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Imperial+Script&display=swap" rel="stylesheet" />
+
+  <!-- Same stylesheet as index.html; the Daily Updates bits live in styles/daily-updates.css -->
+  <link rel="stylesheet" href="styles/main.css" />
+</head>
+
+<body>
+  <div id="page-loader" class="page-loader" role="status" aria-label="Loading">
+    <div class="loader-spinner" aria-hidden="true"></div>
+    <span class="loader-text">Loading team updates…</span>
+  </div>
+
+  <div class="bg-gradient" aria-hidden="true"></div>
+  <div class="bg-grid" aria-hidden="true"></div>
+
+  <!-- ============================================================
+       TOP NAVIGATION — same as index.html
+       ============================================================ -->
+  <header class="topnav" role="banner">
+    <div class="topnav__brand">
+      <img src="assets/logo.png" alt="Harleys Fine Baking logo" class="topnav__logo" width="36" height="36" />
+      <span class="topnav__title">Harleys Fine Baking ODOO DEV</span>
+      <span class="env-badge" id="env-badge">Testing</span>
+    </div>
+    <nav class="topnav__nav" aria-label="Site">
+      <a class="topnav__link" href="./">Home</a>
+      <div id="env-links" style="display:contents"><!-- Environment links injected by scripts/updates-page.js --></div>
+      <a class="topnav__link" href="docs/index.html">Documentation</a>
+    </nav>
+    <div class="topnav__right">
+      <time class="clock" id="clock" datetime="" aria-label="Current date and time">--:--:--</time>
+    </div>
+  </header>
+
+  <main class="page page--wide" id="main" role="main">
+    <!-- ----------------------------------------------------------
+         TITLE + FILTERS (one row; they scope everything below)
+         ---------------------------------------------------------- -->
+    <div class="daily-head">
+      <div>
+        <h1 class="daily-head__title">Daily Updates</h1>
+        <p class="section-subtitle" id="daily-summary">Loading…</p>
+      </div>
+      <div class="daily__controls">
+        <div class="segmented" role="group" aria-label="Report type">
+          <button type="button" class="segmented__btn" data-kind="mom" aria-pressed="false">Sprint MoM</button>
+          <button type="button" class="segmented__btn" data-kind="eod" aria-pressed="true">EOD</button>
+        </div>
+        <input type="date" class="daily__date" id="daily-date" aria-label="Day" />
+        <button type="button" class="chip-btn" id="copy-all">Copy all</button>
+      </div>
+    </div>
+
+    <div id="daily-body" aria-live="polite">
+      <!-- ----------------------------------------------------------
+           RELEASE PIPELINE + LAST TO PRODUCTION
+           ---------------------------------------------------------- -->
+      <section class="daily-section" aria-labelledby="pipeline-title">
+        <h2 class="daily-section__title" id="pipeline-title">Release pipeline</h2>
+        <p class="daily-section__hint">Open tasks per stage in Odoo Projects, and who they're assigned to.</p>
+        <div class="pipeline-layout">
+          <div class="pipeline" id="pipeline"></div>
+          <article class="panel" aria-labelledby="prod-title">
+            <h3 class="panel__title" id="prod-title">Last moved to Production</h3>
+            <ol class="prod-list" id="to-production"></ol>
+          </article>
+        </div>
+      </section>
+
+      <!-- ----------------------------------------------------------
+           TEAM AT A GLANCE — the exact My Tasks banner, per person
+           ---------------------------------------------------------- -->
+      <section class="daily-section" aria-labelledby="team-title">
+        <h2 class="daily-section__title" id="team-title">Team at a glance</h2>
+        <p class="daily-section__hint">The same numbers as each person's My Tasks banner in Odoo, as of now.</p>
+        <div class="panel panel--table" id="team-table"></div>
+      </section>
+
+      <!-- ----------------------------------------------------------
+           PEOPLE — MoM/EOD text + their My Tasks charts
+           ---------------------------------------------------------- -->
+      <section class="daily-section" aria-labelledby="people-title">
+        <h2 class="daily-section__title" id="people-title">Updates</h2>
+        <p class="daily-section__hint" id="people-hint"></p>
+        <div class="people" id="people" role="list"></div>
+      </section>
+
+      <!-- ----------------------------------------------------------
+           WHERE THIS COMES FROM
+           ---------------------------------------------------------- -->
+      <section class="daily-section" aria-labelledby="source-title">
+        <h2 class="daily-section__title" id="source-title">Where this comes from</h2>
+        <div class="panel source-notes" id="source-notes"></div>
+      </section>
+    </div>
+  </main>
+
+  <div class="chart-tip" id="chart-tip" role="tooltip" hidden></div>
+
+  <footer class="footer" role="contentinfo">
+    <div class="footer__brand">
+      <span class="footer__company">Harleys Fine Baking</span>
+      <span class="footer__platform">ODOO DEV Platform</span>
+    </div>
+    <div class="footer__meta">
+      <span id="footer-powered">Powered by Odoo 19 Enterprise</span>
+      <span class="footer__dot" aria-hidden="true">•</span>
+      <span id="footer-notice">Designed for Internal Use Only</span>
+      <span class="footer__dot" aria-hidden="true">•</span>
+      <a href="docs/index.html" class="footer__docs-link">Documentation</a>
+    </div>
+  </footer>
+
+  <script type="module" src="scripts/updates-page.js"></script>
+</body>
+</html>

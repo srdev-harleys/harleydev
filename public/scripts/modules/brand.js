@@ -9,9 +9,6 @@ export function applyBrand(brand = {}) {
   setText('hero-desc', brand.description);
   setText('env-badge', brand.environment || 'Testing');
 
-  const projectsLink = document.getElementById('projects-link');
-  if (projectsLink && brand.projectsUrl) projectsLink.href = brand.projectsUrl;
-
   if (brand.footer) {
     setText('footer-powered', brand.footer.poweredBy);
     setText('footer-notice', brand.footer.notice);
