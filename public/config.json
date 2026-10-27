@@ -28,7 +28,7 @@
       "download": "harleys-grn.apk",
       "icon": "phone",
       "status": "Online",
-      "environment": "Production · harleys.odoo.com · v0.2.0 · 19.4 MB",
+      "environment": "Production · harleys.odoo.com · v0.3.0 · 19.9 MB",
       "featured": true
     },
     {
@@ -66,6 +66,13 @@
     }
   ],
   "recentUpdates": [
+    {
+      "date": "2026-10-27",
+      "title": "Harley's GRN app v0.3.0",
+      "description": "Raise an issue per item instead of per row: pick the batches, one or more reasons, a remark and now photos from the camera or gallery. The POD-Ack screen shows the issue and its photos back on the receipt. Download and install over the old app; your setup stays.",
+      "link": "downloads/harleys-grn.apk",
+      "linkLabel": "Download v0.3.0"
+    },
     {
       "date": "2026-10-17",
       "title": "Harley's GRN app v0.2.0",
