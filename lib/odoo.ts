@@ -45,13 +45,19 @@ export async function fetchDailyUpdates(date?: string): Promise<DailyUpdates> {
   const token = process.env.HARLEYS_PORTAL_TOKEN;
   if (!base || !token) throw new OdooError('not_configured', 'ODOO_URL / HARLEYS_PORTAL_TOKEN not set');
 
+  const db = process.env.ODOO_DB; // needed once the server holds more than one database
+
   const url = new URL('/harleys/daily-updates', base);
   if (date) url.searchParams.set('date', date);
 
   let res: Response;
   try {
     res = await fetch(url, {
-      headers: { 'X-Portal-Token': token, 'ngrok-skip-browser-warning': '1' },
+      headers: {
+        'X-Portal-Token': token,
+        'ngrok-skip-browser-warning': '1',
+        ...(db ? { 'X-Odoo-Database': db } : {}),
+      },
       signal: AbortSignal.timeout(TIMEOUT_MS),
       cache: 'no-store',
     });
