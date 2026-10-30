@@ -5,7 +5,7 @@
     "description": "This portal provides secure access to the Harleys Fine Baking ODOO testing environments — UAT Test, Integration Test and Dev. Only authorized users should access these systems.",
     "environments": [
       { "name": "UAT Test", "url": "https://harleys-harley-test-40041057.dev.odoo.com/odoo", "environment": "UAT Testing" },
-      { "name": "Integration Test", "url": "https://harleys-harley-test2-39369946.dev.odoo.com/odoo", "environment": "Integration Testing" },
+      { "name": "Integration Test", "url": "https://harleys-harley-test2-40927502.dev.odoo.com/odoo", "environment": "Integration Testing" },
       { "name": "Dev Link", "url": "https://jump-tiring-defection.ngrok-free.dev/", "environment": "Development",
         "_disabledLinks": [
           { "label": "Public", "url": "https://dev.harleys.com:8443/web/login" },
