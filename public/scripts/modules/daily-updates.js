@@ -7,7 +7,7 @@ import { escapeHtml, copyText } from './dom-utils.js';
 import { attachTip } from './chart-tip.js';
 
 const KIND_LABEL = { mom: 'Sprint MoM', eod: 'EOD' };
-const SOURCE_LABEL = { saved: 'Generated in Odoo', live: 'Auto from My Day' };
+const SOURCE_LABEL = { live: 'Auto from My Day', day_end: 'Saved at end of day' };
 
 const fmtShort = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short' });
 const fmtLong = new Intl.DateTimeFormat(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
@@ -78,7 +78,7 @@ export function renderPeople(container, people = [], kind = 'eod') {
           <pre class="person__text">${escapeHtml(report.text)}</pre>`
         : `<p class="person__empty">${report.source === 'error'
             ? `Could not build the ${label} for this person.`
-            : `No ${label} for this day: nothing planned on their My Day.`}</p>`}
+            : `No ${label} for this day: no activity.`}</p>`}
       </div>
       <div class="person__charts">
         <section>

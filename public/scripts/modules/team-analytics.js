@@ -95,27 +95,25 @@ export function renderTeamTable(container, people = []) {
     </div>`;
 }
 
-export function renderSourceNotes(container, aiEnabled) {
+export function renderSourceNotes(container) {
   if (!container) return;
   container.innerHTML = `
     <dl class="source-notes__list">
       <div>
-        <dt><span class="source-badge is-saved">Generated in Odoo</span></dt>
-        <dd>The text the person produced with <strong>Generate MoM / EOD</strong> on My Day in Odoo.
-          Odoo rewrites it with the planner's AI (NVIDIA API, model set in Odoo Settings —
-          ${aiEnabled ? 'currently <strong>on</strong>' : 'currently <strong>off</strong>, no key set'}) and falls back to
-          the standard text when the AI is busy. If they generated it more than once that day, the latest one is shown.</dd>
+        <dt><span class="source-badge is-live">Auto from My Day</span></dt>
+        <dd>Odoo's standard MoM / EOD text, the same template My Day falls back to when its AI is off: planned items,
+          their notes, chatter and stage moves, plus a <strong>Signed off</strong> section in the EOD for sign-offs they
+          gave (on any task). Never the AI-worded version, even if they clicked Generate in Odoo.</dd>
       </div>
       <div>
-        <dt><span class="source-badge is-live">Auto from My Day</span></dt>
-        <dd>Nobody generated one that day, so Odoo builds the standard MoM / EOD text from the person's My Day:
-          planned items, their notes, chatter and stage moves. Same template as Odoo's own, <strong>no AI call</strong>.</dd>
+        <dt><span class="source-badge is-day_end">Saved at end of day</span></dt>
+        <dd>A past day shows the text Odoo kept at 00:05, before unfinished items moved on to the next day, so it stays
+          as it was. Items frozen on My Day (blocked) stay on their day and show as <strong>Frozen</strong> in Pending.</dd>
       </div>
       <div>
         <dt>Numbers &amp; charts</dt>
         <dd>Computed by Odoo as each person, with the same methods as their My Tasks banner and charts, so they match
-          Odoo exactly. They are always as of now; the date picker only changes the MoM / EOD text and the day counts.
-          This page never calls the AI itself.</dd>
+          Odoo exactly. They are always as of now; the date picker only changes the MoM / EOD text and the day counts.</dd>
       </div>
     </dl>`;
 }

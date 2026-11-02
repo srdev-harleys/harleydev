@@ -93,7 +93,7 @@ function init() {
     renderTeamTable(document.getElementById('team-table'), people);
     renderPeople(document.getElementById('people'), people, state.kind);
     setText('people-hint', `${KIND_LABEL[state.kind]} for ${fmtDay(data.date)}, with each person's My Tasks charts (as of now).`);
-    renderSourceNotes(document.getElementById('source-notes'), data.ai_enabled);
+    renderSourceNotes(document.getElementById('source-notes'));
   };
 
   function showMessage(html) {

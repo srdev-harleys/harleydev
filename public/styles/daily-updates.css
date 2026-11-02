@@ -265,6 +265,7 @@
   white-space: nowrap;
 }
 .source-badge.is-saved { background: var(--surface-pink); color: var(--color-rose-700); }
+.source-badge.is-day_end { background: var(--accent-soft); color: var(--text); }
 
 /* done-per-day columns: 2px gaps between bars, rounded data end, anchored to the baseline */
 .activity__cols {
