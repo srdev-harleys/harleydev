@@ -28,7 +28,7 @@
       "download": "harleys-grn.apk",
       "icon": "phone",
       "status": "Online",
-      "environment": "Production · harleys.odoo.com · v0.3.0 · 19.9 MB",
+      "environment": "Production · harleys.odoo.com · v4.0.0 · 19.9 MB",
       "featured": true
     },
     {
@@ -66,6 +66,13 @@
     }
   ],
   "recentUpdates": [
+    {
+      "date": "2026-11-03",
+      "title": "Harley's GRN app v4.0.0 (required update)",
+      "description": "Older versions will soon stop working: install this one to keep receiving and signing challans. From now on, when an update is due the app shows an Update screen with the download, instead of failing. Also: items not ticked are listed first on Sign with their Rcvd button glowing, and the Issue screen asks the quantity affected. Download and install over the old app; your setup and unsent changes stay.",
+      "link": "downloads/harleys-grn.apk",
+      "linkLabel": "Download v4.0.0"
+    },
     {
       "date": "2026-10-27",
       "title": "Harley's GRN app v0.3.0",
