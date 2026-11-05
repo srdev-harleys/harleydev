@@ -32,6 +32,14 @@
       "featured": true
     },
     {
+      "name": "Harley's GRN App (Web)",
+      "url": "app/",
+      "icon": "phone",
+      "status": "Online",
+      "environment": "Production · harleys.odoo.com · open in Chrome, then Add to Home screen / Install",
+      "featured": true
+    },
+    {
       "name": "Daily Updates",
       "url": "updates",
       "icon": "board",
