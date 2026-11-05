@@ -33,6 +33,12 @@
       "description": "Standard Operating Procedure for creating warehouses in Odoo — step-by-step setup, configuration, and validation guidance for the Harleys Fine Baking ODOO DEV environment.",
       "updated": "2026-09-25",
       "userGuide": "warehouse-creation/user-guide.html"
+    },
+    {
+      "title": "New Company Setup — Indian Fiscal Localization & GST",
+      "description": "How to create a new Indian company in Odoo 19 — activating the Indian localization, verifying Chart of Accounts, GST taxes and journals, configuring E-Invoice/E-Way bill, and validating GST report isolation before live use.",
+      "updated": "2026-11-05",
+      "userGuide": "company-creation/user-guide.html"
     }
   ]
 }

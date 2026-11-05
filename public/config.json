@@ -75,6 +75,13 @@
   ],
   "recentUpdates": [
     {
+      "date": "2026-11-05",
+      "title": "New Company Setup guide published",
+      "description": "A step-by-step procedure for creating an Indian company in Odoo 19 — fiscal localization, Chart of Accounts, GST taxes, journals, E-Invoice/E-Way bill and pre-go-live validation, published as a User Guide with a downloadable PDF.",
+      "link": "docs/index.html",
+      "linkLabel": "Browse the docs"
+    },
+    {
       "date": "2026-11-03",
       "title": "Harley's GRN app v4.0.0 (required update)",
       "description": "Older versions will soon stop working: install this one to keep receiving and signing challans. From now on, when an update is due the app shows an Update screen with the download, instead of failing. Also: items not ticked are listed first on Sign with their Rcvd button glowing, and the Issue screen asks the quantity affected. Download and install over the old app; your setup and unsent changes stay.",

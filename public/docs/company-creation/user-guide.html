@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>New Company Setup in Odoo 19 — Indian Fiscal Localization and GST Accounting</title>
+<link rel="stylesheet" href="../assets/styles/main.css">
+</head>
+<body>
+<div class="page">
+
+  <a class="back-link" href="../index.html">&larr; Back to documentation home</a>
+
+  <header class="doc-head">
+    <p class="eyebrow">User Guide — Harleys Odoo 19 Enterprise</p>
+    <h1>New Company Setup in Odoo</h1>
+    <p class="dek">Indian fiscal localization and GST accounting. Use this procedure to create an Indian company, activate its accounting localization, verify GST and journals, and test that its invoices and reports use the correct company.</p>
+    <div class="meta">
+      <span><b>Audience</b> Administrators and Accounting administrators setting up a new Indian company</span>
+      <span><b>Reference version</b> Odoo 19 Enterprise</span>
+      <span><b>Reading time</b> ~10 minutes</span>
+    </div>
+  </header>
+
+  <div class="callout warn">
+    <b>Important</b>
+    Complete the localization checks before posting the first accounting entry.
+  </div>
+
+  <nav class="toc" aria-labelledby="contents-title">
+    <b id="contents-title">Contents</b>
+    <ol>
+      <li><a href="#before-you-begin">Before you begin</a></li>
+      <li><a href="#create-company">1. Create the company</a></li>
+      <li><a href="#company-contact">2. Complete the linked company contact</a></li>
+      <li><a href="#fiscal-localization">3. Activate the Indian fiscal localization</a>
+        <ol>
+          <li><a href="#modules">Modules to verify</a></li>
+          <li><a href="#chart-of-accounts">Verify the Chart of Accounts</a></li>
+        </ol>
+      </li>
+      <li><a href="#gst-taxes">4. Verify GST taxes and invoice details</a></li>
+      <li><a href="#journals">5. Review and create journals</a></li>
+      <li><a href="#e-invoice">6. Configure E-Invoice and E-Way bill</a>
+        <ol>
+          <li><a href="#gstr-isolation">Verify GSTR-1 and GSTR-3B isolation</a></li>
+        </ol>
+      </li>
+      <li><a href="#validation">7. Complete validation before live use</a></li>
+    </ol>
+  </nav>
+
+  <section id="before-you-begin">
+    <h2>Before you begin</h2>
+    <ul>
+      <li>Keep the legal name, registered address, state, PIN code, GSTIN, PAN and bank details ready. Confirm GST registration status and integration applicability with the finance team.</li>
+      <li>Use an administrator with company setup rights and an authorized Accounting administrator. First validate the procedure in UAT with external production submissions disabled.</li>
+      <li>Confirm whether this is an independent company or a branch. Branches inherit the parent company&rsquo;s localization and accounting framework; their tax reporting scope needs separate verification.</li>
+    </ul>
+  </section>
+
+  <section id="create-company">
+    <h2>1. Create the company</h2>
+    <ol>
+      <li>Go to <b>Settings &rarr; Users &amp; Companies &rarr; Companies &rarr; New</b>. Enter the legal company name, full address, <b>Country</b> as India, correct <b>State</b>, <b>GSTIN</b> and contact details.</li>
+      <li>In the company selector at the top right, make the new company active and select only that company while configuring it. Confirm authorized users have access to it.</li>
+      <li>Verify the company currency is <b>INR</b> for this Indian accounting setup. Record the intended financial year and accounting start date with the finance team.</li>
+    </ol>
+  </section>
+
+  <section id="company-contact">
+    <h2>2. Complete the linked company contact</h2>
+    <p>Open <b>Contacts</b> and locate the contact linked to the new company. Verify that it is the same legal entity, then enter or check <b>PAN</b>, <b>GSTIN</b> and address. Add tags only if required.</p>
+    <div class="callout">
+      <b>Note</b>
+      Avoid creating a second contact for the same company.
+    </div>
+  </section>
+
+  <section id="fiscal-localization">
+    <h2>3. Activate the Indian fiscal localization</h2>
+    <ol>
+      <li>Keep only the new company selected. Open <b>Accounting &rarr; Configuration &rarr; Settings &rarr; Fiscal Localization</b>.</li>
+      <li>Check the <b>Package</b> field. Select the Indian accounting package if it has not already been selected automatically from the company&rsquo;s country.</li>
+      <li>If the package is unavailable, ask the administrator to verify that <b>Indian Accounting</b> is installed in <b>Apps</b>. Clear the Apps filter if needed to find technical modules. Return to the new company and verify its <b>Package</b> again.</li>
+      <li>Reopen Accounting settings and the Chart of Accounts. Confirm that the new company has its Indian accounts and taxes.</li>
+    </ol>
+
+    <section id="modules">
+      <h3>Modules to verify</h3>
+      <p>The following Odoo 19 modules support the relevant features. Install only what is required; technical names differ in older Odoo releases.</p>
+      <table>
+        <caption>Indian localization modules</caption>
+        <thead>
+          <tr>
+            <th scope="col">Module</th>
+            <th scope="col">Purpose</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th scope="row"><code>l10n_in</code></th><td>Indian accounting localization</td></tr>
+          <tr><th scope="row"><code>l10n_in_reports</code></th><td>Indian tax reports and GST return features</td></tr>
+          <tr><th scope="row"><code>l10n_in_edi</code></th><td>E-Invoice integration when applicable</td></tr>
+          <tr><th scope="row"><code>l10n_in_ewaybill</code></th><td>E-Way bill integration when applicable</td></tr>
+          <tr><th scope="row"><code>l10n_in_ewaybill_stock</code></th><td>E-Way bills from Inventory when required</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="chart-of-accounts">
+      <h3>Verify the Chart of Accounts</h3>
+      <p>Go to <b>Accounting &rarr; Configuration &rarr; Chart of Accounts</b>. Review accounts available to the new company, including receivables, payables, sales, expenses, bank, cash, and GST input and output accounts. Check account codes and types; types affect financial reporting.</p>
+      <p>Use the localized accounts as the starting point. Add business-specific accounts only after checking for an existing equivalent. Confirm default receivable and payable accounts on a sample customer and vendor, and income and expense accounts on a sample product or category.</p>
+    </section>
+  </section>
+
+  <section id="gst-taxes">
+    <h2>4. Verify GST taxes and invoice details</h2>
+    <p>Go to <b>Accounting &rarr; Configuration &rarr; Taxes</b>. Review the localized taxes for the new company, including <b>CGST</b>, <b>SGST</b> and <b>IGST</b>. Check the required sales and purchase variants, rates, tax accounts and tax grids used in reporting.</p>
+    <div class="callout">
+      <b>Note</b>
+      Avoid duplicating a tax just because it is archived or filtered out.
+    </div>
+  </section>
+
+  <section id="journals">
+    <h2>5. Review and create journals</h2>
+    <p>Go to <b>Accounting &rarr; Configuration &rarr; Journals</b> with the new company selected. Standard journals may already have been created during accounting setup. Reuse suitable journals and click <b>New</b> only for missing or additional journals.</p>
+    <table>
+      <caption>Journals to review</caption>
+      <thead>
+        <tr>
+          <th scope="col">Journal</th>
+          <th scope="col">Type</th>
+          <th scope="col">Configuration to check</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><th scope="row">Customer invoices</th><td>Sales</td><td>Company, journal code and invoice numbering</td></tr>
+        <tr><th scope="row">Vendor bills</th><td>Purchase</td><td>Company, journal code and default accounts where used</td></tr>
+        <tr><th scope="row">Each bank account</th><td>Bank</td><td>Company, bank account, currency and payment configuration</td></tr>
+        <tr><th scope="row">Cash when used</th><td>Cash</td><td>Company and cash account</td></tr>
+        <tr><th scope="row">General adjustments</th><td>Miscellaneous</td><td>Company and intended adjustment or opening entry use</td></tr>
+      </tbody>
+    </table>
+    <p>For each journal, confirm the correct company and accounts available to that company. Use clear journal names and distinct codes within the company. Review invoice and credit note numbering before the first posting.</p>
+    <p>For bank journals, verify the account number, bank name and IFSC where applicable. Check receipt and payment methods and any outstanding receipt or payment accounts required by the reconciliation process. Test one receipt and one payment in UAT.</p>
+  </section>
+
+  <section id="e-invoice">
+    <h2>6. Configure E-Invoice and E-Way bill</h2>
+    <p>Enable the integrations that the finance team confirms are applicable. Odoo 19 exposes GST registration and integration options under <b>Accounting &rarr; Configuration &rarr; Settings &rarr; Indian Integration</b>.</p>
+
+    <section id="gstr-isolation">
+      <h3>Verify GSTR-1 and GSTR-3B isolation</h3>
+      <ol>
+        <li>Open the relevant GST report under <b>Accounting &rarr; Reporting</b>, or through the <b>Tax Returns</b> dashboard, depending on the installed build. Confirm both reports are available with the required Indian reporting module.</li>
+        <li>Select only the new company and the intended reporting period. Verify the displayed GSTIN, company scope, any tax unit selection and whether branch data is included before reviewing or exporting.</li>
+        <li>Drill down from the report totals to source entries. Confirm all included entries belong to the intended company or approved GST reporting scope.</li>
+        <li>Run the same period for an existing company. Confirm the new company&rsquo;s test transactions do not appear. Compare the existing company&rsquo;s totals with the baseline recorded before testing.</li>
+      </ol>
+      <div class="callout warn">
+        <b>Caution</b>
+        If a custom report mixes records, have the developer review its company filters and access handling. Do not rely on a company name in the report header as proof that the underlying entries are isolated.
+      </div>
+    </section>
+  </section>
+
+  <section id="validation">
+    <h2>7. Complete validation before live use</h2>
+    <p>Record the UAT database, company, GSTIN, period, document numbers and reviewer for each test. Use a product and tax rate approved for that test. The checks below are recommended implementation acceptance checks, not a record of tests already performed.</p>
+    <table>
+      <caption>Acceptance checks</caption>
+      <thead>
+        <tr>
+          <th scope="col">Test</th>
+          <th scope="col">Pass condition</th>
+          <th scope="col">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><th scope="row">Company identity</th><td>Company and linked contact agree; invoice preview shows the intended seller GSTIN and required PAN.</td><td><input type="checkbox" aria-label="Mark Company identity as passed"></td></tr>
+        <tr><th scope="row">Localization and accounts</th><td>India package is set; required accounts and taxes are available to the new company.</td><td><input type="checkbox" aria-label="Mark Localization and accounts as passed"></td></tr>
+        <tr><th scope="row">Domestic sales and purchases</th><td>Intra-state and inter-state test documents use the approved GST treatment and correct input or output accounts.</td><td><input type="checkbox" aria-label="Mark Domestic sales and purchases as passed"></td></tr>
+        <tr><th scope="row">Journals and payments</th><td>Journal company, bank details and numbering are correct; receipt and payment tests reconcile as intended.</td><td><input type="checkbox" aria-label="Mark Journals and payments as passed"></td></tr>
+        <tr><th scope="row">GST report completeness</th><td>Posted test documents appear in the correct period and sections; report totals reconcile to source entries.</td><td><input type="checkbox" aria-label="Mark GST report completeness as passed"></td></tr>
+        <tr><th scope="row">Company isolation</th><td>New company entries are excluded from existing company reports; restricted users cannot access them.</td><td><input type="checkbox" aria-label="Mark Company isolation as passed"></td></tr>
+        <tr><th scope="row">External integrations</th><td>Applicable services use the intended GSTIN and environment; responses and invoice outputs are verified.</td><td><input type="checkbox" aria-label="Mark External integrations as passed"></td></tr>
+      </tbody>
+    </table>
+    <p>Before live use, load approved opening balances if needed, set the required accounting lock dates, and activate production integrations only with the intended company.</p>
+  </section>
+
+  <footer>
+    User guide — Harleys Odoo 19 Enterprise. <a href="user-guide.pdf">Download the source guide PDF</a>.
+  </footer>
+
+</div>
+<script type="module" src="../assets/scripts/main.js"></script>
+</body>
+</html>
