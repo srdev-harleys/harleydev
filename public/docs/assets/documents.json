@@ -39,6 +39,12 @@
       "description": "How to create a new Indian company in Odoo 19 — activating the Indian localization, verifying Chart of Accounts, GST taxes and journals, configuring E-Invoice/E-Way bill, and validating GST report isolation before live use.",
       "updated": "2026-11-05",
       "userGuide": "company-creation/user-guide.html"
+    },
+    {
+      "title": "Exchange Rate SOP — EUR Purchase Orders from an INR Company",
+      "description": "Standard Operating Procedure for raising EUR Purchase Orders in an INR company — currency and rate setup, vendor billing, customs/IGST and landed costs, foreign payments, exchange gain/loss and month-end revaluation.",
+      "updated": "2026-11-05",
+      "userGuide": "exchange-rate-sop/user-guide.html"
     }
   ]
 }

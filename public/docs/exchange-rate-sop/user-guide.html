@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exchange Rate SOP — Raising a EUR Purchase Order from an INR Company</title>
+<link rel="stylesheet" href="../assets/styles/main.css">
+</head>
+<body>
+<div class="page">
+
+  <a class="back-link" href="../index.html">&larr; Back to documentation home</a>
+
+  <header class="doc-head">
+    <p class="eyebrow">User Guide — Harleys Odoo 19 Enterprise</p>
+    <h1>Standard Operating Procedure (SOP) Raising a EUR Purchase Order from an Indian (INR) Company in Odoo</h1>
+    <p class="dek">The end-to-end process for creating and managing a EUR-denominated Purchase Order in a company whose accounting and reporting currency is INR — from one-time configuration to month-end revaluation.</p>
+    <div class="meta">
+      <span><b>Process</b> Foreign Currency Procurement</span>
+      <span><b>Currency</b> EUR (transaction) / INR (company)</span>
+      <span><b>Audience</b> Purchase, Finance, Accounts, Inventory and ERP Support</span>
+      <span><b>Status</b> Draft – Subject to Staging Validation</span>
+      <span><b>Reading time</b> ~15 minutes</span>
+    </div>
+  </header>
+
+  <nav class="toc" aria-labelledby="contents-title">
+    <b id="contents-title">Contents</b>
+    <ol>
+      <li><a href="#purpose">Purpose and Scope</a></li>
+      <li><a href="#concepts">Understanding Foreign Currency Accounting</a></li>
+      <li><a href="#phase-1">Phase 1 – One-Time Odoo Configuration</a></li>
+      <li><a href="#phase-2">Phase 2 – Raising the EUR Purchase Order</a></li>
+      <li><a href="#phase-3">Phase 3 – Goods Receipt and Inventory Valuation</a></li>
+      <li><a href="#phase-4">Phase 4 – Vendor Bill and Import Cost Accounting</a></li>
+      <li><a href="#phase-5">Phase 5 – Foreign Vendor Payment</a></li>
+      <li><a href="#phase-6">Phase 6 – Month-End Foreign Currency Revaluation</a></li>
+      <li><a href="#conclusion">Final Conclusion</a></li>
+      <li><a href="#governance">Document Governance</a></li>
+    </ol>
+  </nav>
+
+  <section id="purpose">
+    <h2>1. Purpose and Scope</h2>
+    <p>This document explains the end-to-end process for creating and managing a EUR-denominated Purchase Order (PO) in an Indian company whose accounting and reporting currency is INR.</p>
+    <p>It covers:</p>
+    <ul>
+      <li>One-time Odoo configuration.</li>
+      <li>Creation and confirmation of EUR Purchase Orders.</li>
+      <li>Goods receipt and inventory valuation.</li>
+      <li>Foreign vendor billing and accounting.</li>
+      <li>Customs duties, import IGST and landed costs.</li>
+      <li>Foreign currency vendor payments.</li>
+      <li>Month-end foreign currency revaluation.</li>
+    </ul>
+    <p>The objective is to ensure that foreign currency purchases are processed correctly, vendor obligations are recorded in EUR, and all company accounting records remain accurate in INR.</p>
+  </section>
+
+  <section id="concepts">
+    <h2>2. Understanding Foreign Currency Accounting</h2>
+
+    <h3>2.1 The fundamental concept</h3>
+    <p>A EUR Purchase Order has two currency layers:</p>
+    <table>
+      <thead>
+        <tr><th scope="col">Layer</th><th scope="col">Currency</th><th scope="col">Application</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Transaction / Document Currency</td><td>EUR</td><td>Purchase Orders, Vendor Bills and Vendor Payments</td></tr>
+        <tr><td>Company / Accounting Currency</td><td>INR</td><td>General Ledger, Stock Valuation, GST, Balance Sheet and P&amp;L</td></tr>
+      </tbody>
+    </table>
+    <p>Odoo maintains the company's accounting records in INR while allowing transactions with foreign vendors in EUR. Every foreign currency transaction is converted into INR using the applicable exchange rate on the relevant document date.</p>
+    <p>The Purchase Order, Goods Receipt, Vendor Bill and Payment may occur on different dates. Consequently, each transaction can have a different INR equivalent. The difference between the exchange rate used when recording the vendor liability and the rate used when settling it results in a realised foreign exchange gain or loss.</p>
+    <div class="callout">
+      <b>Important</b>
+      Exchange differences are a normal consequence of foreign currency transactions. They are not necessarily accounting errors.
+    </div>
+
+    <h3>2.2 Example of exchange rate movement</h3>
+    <p>Assume the following exchange rates:</p>
+    <ul>
+      <li>Purchase Order date: EUR 1 = INR 92.00</li>
+      <li>Goods Receipt date: EUR 1 = INR 92.40</li>
+      <li>Vendor Bill date: EUR 1 = INR 92.50</li>
+      <li>Payment date: EUR 1 = INR 93.10</li>
+    </ul>
+    <p>For a EUR 1,000 purchase, the vendor liability is recorded at INR 92,500 using the bill-date rate. If the company pays INR 93,100, the difference of INR 600 represents an exchange loss, subject to the actual payment and reconciliation entries.</p>
+  </section>
+
+  <section id="phase-1">
+    <h2>3. Phase 1 – One-Time Odoo Configuration</h2>
+    <p>The following configuration must be completed before processing foreign currency Purchase Orders.</p>
+
+    <h3>3.1 Activate EUR currency</h3>
+    <p><b>Navigation:</b> Accounting &rarr; Configuration &rarr; Currencies</p>
+    <ol>
+      <li>Search for <b>EUR</b>.</li>
+      <li>Open the EUR currency record.</li>
+      <li>Enable the <b>Active</b> option.</li>
+      <li>Save the configuration.</li>
+    </ol>
+
+    <h3>3.2 Configure exchange rates</h3>
+    <p><b>Navigation:</b> Accounting &rarr; Configuration &rarr; Currencies &rarr; EUR &rarr; Rates</p>
+    <p>Enter exchange rates in the format <b>INR per EUR unit</b>. Example:</p>
+    <table>
+      <thead>
+        <tr><th scope="col">Currency</th><th scope="col">Exchange Rate</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>EUR</td><td>92.50 INR</td></tr>
+      </tbody>
+    </table>
+    <p>This means EUR 1 = INR 92.50.</p>
+    <div class="callout warn">
+      <b>Do not enter the inverse rate</b>
+      Never enter EUR per INR. This is one of the most important configuration controls because incorrect rate direction can result in significantly incorrect accounting values.
+    </div>
+    <p>Exchange rates can be maintained through either:</p>
+    <ul>
+      <li><b>Automatic Currency Rates:</b> Configure under Settings &rarr; Accounting, where supported.</li>
+      <li><b>Manual Rate Maintenance:</b> Finance enters the applicable RBI/bank reference rate on a daily basis.</li>
+    </ul>
+    <p>The organisation must define which exchange-rate source is approved for accounting purposes.</p>
+
+    <h3>3.3 Configure exchange difference accounts</h3>
+    <p><b>Navigation:</b> Settings &rarr; Accounting &rarr; Default Accounts</p>
+    <table>
+      <thead>
+        <tr><th scope="col">Configuration</th><th scope="col">Required Account</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Exchange Gain Account</td><td>Foreign Exchange Gain</td></tr>
+        <tr><td>Exchange Loss Account</td><td>Foreign Exchange Loss</td></tr>
+        <tr><td>Exchange Difference Journal</td><td>Exchange Difference Journal</td></tr>
+      </tbody>
+    </table>
+    <p>These accounts are required for recording foreign exchange differences generated during payment reconciliation and currency revaluation.</p>
+
+    <h3>3.4 Configure the foreign vendor master</h3>
+    <p>Create or update the foreign vendor master. Required fields:</p>
+    <table>
+      <thead>
+        <tr><th scope="col">Field</th><th scope="col">Required Configuration</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Vendor Country</td><td>Actual foreign vendor country</td></tr>
+        <tr><td>GST Treatment</td><td>Overseas</td></tr>
+        <tr><td>Supplier Currency</td><td>EUR</td></tr>
+        <tr><td>GSTIN</td><td>Not applicable</td></tr>
+        <tr><td>Purchase Configuration</td><td>Supplier Currency = EUR</td></tr>
+      </tbody>
+    </table>
+    <div class="callout">
+      <b>Expected behaviour</b>
+      New Purchase Orders created for this vendor should automatically default to EUR.
+    </div>
+    <p>The vendor's country must reflect the actual country of registration and should not be set to India merely because the purchasing company is Indian.</p>
+
+    <h3>3.5 Configure vendor pricelist</h3>
+    <p><b>Navigation:</b> Products &rarr; Product &rarr; Purchase Tab &rarr; Vendor Pricelist</p>
+    <p>For the relevant vendor:</p>
+    <ol>
+      <li>Add the vendor pricing line.</li>
+      <li>Enter the purchase price in EUR.</li>
+      <li>Select <b>EUR</b> as the pricing currency.</li>
+      <li>Save the configuration.</li>
+    </ol>
+    <div class="callout warn">
+      <b>Important control</b>
+      Vendor prices must be maintained in EUR rather than INR. If the vendor price is maintained in INR, Odoo may convert it into EUR when generating the Purchase Order. This can result in unexpected values such as EUR 1.0811 instead of the intended commercial price.
+    </div>
+
+    <h3>3.6 Configure fiscal position and taxes</h3>
+    <p>For a foreign vendor:</p>
+    <ul>
+      <li>The vendor Purchase Order should not include domestic GST charged by the foreign supplier.</li>
+      <li>The foreign vendor bill should generally carry no Indian GST.</li>
+      <li>Import IGST is accounted for separately based on the applicable Bill of Entry and customs documentation.</li>
+    </ul>
+    <p>Import IGST should be recorded as eligible input tax credit where the statutory conditions are satisfied, rather than automatically being included in the purchase cost.</p>
+
+    <h3>3.7 Configure EUR bank journal (optional)</h3>
+    <p>If the company maintains a EUR or EEFC bank account:</p>
+    <ol>
+      <li>Create a separate bank journal.</li>
+      <li>Configure its currency as EUR.</li>
+      <li>Link the appropriate bank account.</li>
+      <li>Verify the journal's accounting configuration.</li>
+    </ol>
+    <p>If the company does not maintain a EUR account, payment can be processed through its INR bank account.</p>
+  </section>
+
+  <section id="phase-2">
+    <h2>4. Phase 2 – Raising the EUR Purchase Order</h2>
+
+    <h3>4.1 Create a Purchase Order</h3>
+    <p><b>Navigation:</b> Purchase &rarr; Orders &rarr; New</p>
+    <ol>
+      <li>Select the foreign vendor.</li>
+      <li>Verify that the currency automatically changes to EUR.</li>
+      <li>Select <b>Purchase Type = External PO</b> (Harleys custom field).</li>
+      <li>Add the required products.</li>
+      <li>Verify that product prices are fetched from the EUR vendor pricelist.</li>
+      <li>Review quantities, prices and total amounts.</li>
+      <li>Confirm the currency before confirming the PO.</li>
+    </ol>
+
+    <h3>4.2 Currency verification control</h3>
+    <p>Before confirming the Purchase Order, the Purchase team must verify:</p>
+    <ul>
+      <li>Correct foreign vendor.</li>
+      <li>Correct transaction currency (EUR).</li>
+      <li>Correct vendor pricelist.</li>
+      <li>Correct product prices.</li>
+      <li>Correct Purchase Type = External PO.</li>
+    </ul>
+    <div class="callout warn">
+      <b>Currency locks on confirmation</b>
+      After confirmation, the currency is effectively locked in the normal workflow. If a correction is required, the PO may need to be cancelled and reset to draft, subject to the applicable Odoo workflow and permissions.
+    </div>
+
+    <h3>4.3 Send the Purchase Order to the vendor</h3>
+    <p>Once confirmed:</p>
+    <ol>
+      <li>Generate the Purchase Order PDF.</li>
+      <li>Verify that all monetary values are displayed in EUR.</li>
+      <li>Send the PO to the foreign vendor.</li>
+    </ol>
+    <p>The standard Odoo Purchase Order report uses the order currency. Based on the provided implementation review, there is no custom PO template identified that hardcodes the INR symbol.</p>
+
+    <h3>4.4 Accounting impact</h3>
+    <div class="callout">
+      <b>No accounting impact at the PO stage</b>
+      The PO represents a commercial commitment, not a posted accounting transaction.
+    </div>
+  </section>
+
+  <section id="phase-3">
+    <h2>5. Phase 3 – Goods Receipt and Inventory Valuation</h2>
+    <p><b>Navigation:</b> Inventory &rarr; Operations &rarr; Receipts</p>
+    <ol>
+      <li>Open the incoming shipment associated with the EUR Purchase Order.</li>
+      <li>Verify received quantities.</li>
+      <li>Validate the Goods Receipt.</li>
+    </ol>
+
+    <h3>5.1 Inventory valuation</h3>
+    <p>Inventory valuation is maintained in INR. The receipt-date exchange rate is used for the initial conversion of the foreign currency purchase value. Example:</p>
+    <ul>
+      <li>Purchase value: EUR 1,000</li>
+      <li>Receipt-date rate: INR 92.40</li>
+      <li>Initial stock valuation: INR 92,400</li>
+    </ul>
+    <p>For AVCO and FIFO valuation methods, subsequent vendor billing and landed-cost processing may adjust inventory valuation depending on the product costing method and Odoo configuration.</p>
+    <div class="callout">
+      <b>Control</b>
+      Finance and Inventory teams should verify that stock valuation entries are posted in INR.
+    </div>
+  </section>
+
+  <section id="phase-4">
+    <h2>6. Phase 4 – Vendor Bill and Import Cost Accounting</h2>
+    <p>This phase is critical because import-related costs must be correctly separated between product cost and recoverable taxes.</p>
+
+    <h3>6.1 Create the foreign vendor bill</h3>
+    <p><b>Navigation:</b> Purchase &rarr; Purchase Order &rarr; Create Bill</p>
+    <ol>
+      <li>Open the confirmed EUR Purchase Order.</li>
+      <li>Select <b>Create Bill</b>.</li>
+      <li>Verify that the bill currency is EUR.</li>
+      <li>Enter the vendor invoice date.</li>
+      <li>Verify the invoice amount and quantities.</li>
+      <li>Ensure that no domestic GST is incorrectly applied.</li>
+      <li>Confirm and post the vendor bill.</li>
+    </ol>
+    <p>Odoo converts the EUR liability into INR using the applicable bill-date exchange rate. Example:</p>
+    <ul>
+      <li>Vendor invoice: EUR 1,000</li>
+      <li>Bill-date rate: INR 92.50</li>
+      <li>INR accounting value: INR 92,500</li>
+    </ul>
+    <p>The vendor payable remains denominated in EUR, while the corresponding accounting entries are maintained in INR.</p>
+
+    <h3>6.2 Customs and Bill of Entry accounting</h3>
+    <p>Customs-related charges must be accounted for separately from the foreign vendor invoice. A separate INR vendor bill or accounting entry should be created based on the applicable customs documentation and the service provider's invoice. The following components must be identified:</p>
+    <p><b>A. Basic Customs Duty (BCD) and other import duties</b></p>
+    <ul>
+      <li>Record BCD and eligible non-recoverable import charges as product acquisition costs.</li>
+      <li>Include these amounts in landed cost where applicable.</li>
+    </ul>
+    <p><b>B. Import IGST</b></p>
+    <ul>
+      <li>Record eligible import IGST in the relevant IGST Input Tax account.</li>
+      <li>Treat it as input tax credit subject to applicable GST legislation and supporting documentation.</li>
+      <li>Do not include recoverable IGST in inventory cost.</li>
+    </ul>
+    <p><b>C. Customs valuation exchange rate</b></p>
+    <p>Customs valuation uses the applicable CBIC-notified exchange rate for the relevant customs purpose. This may differ from the bank or accounting exchange rate used for the foreign vendor bill. Therefore, the INR value on the Bill of Entry may differ from the INR equivalent of the vendor invoice. This difference is not automatically an error.</p>
+
+    <h3>6.3 Freight, insurance and CHA charges</h3>
+    <p>Create separate INR vendor bills for:</p>
+    <ul>
+      <li>International and domestic freight.</li>
+      <li>Insurance charges.</li>
+      <li>Customs House Agent (CHA) fees.</li>
+      <li>Other eligible import-related expenses.</li>
+    </ul>
+    <p>These charges must be classified correctly based on their nature and accounting treatment.</p>
+
+    <h3>6.4 Landed Cost configuration</h3>
+    <p><b>Navigation:</b> Inventory &rarr; Operations &rarr; Landed Costs</p>
+    <p>This functionality requires the Odoo Stock Landed Costs module (<code>stock_landed_costs</code>).</p>
+    <ol>
+      <li>Create a landed cost document.</li>
+      <li>Select the relevant stock receipt.</li>
+      <li>Add applicable cost lines.</li>
+      <li>Include BCD, freight and eligible CHA charges.</li>
+      <li>Select the appropriate cost distribution method.</li>
+      <li>Validate the landed cost.</li>
+      <li>Verify the resulting inventory valuation entries.</li>
+    </ol>
+
+    <h3>6.5 Expected landed cost</h3>
+    <p>The final product cost should reflect:</p>
+    <ul>
+      <li>Foreign purchase price converted into INR.</li>
+      <li>Applicable customs duties.</li>
+      <li>Freight and insurance.</li>
+      <li>Eligible import-related acquisition charges.</li>
+    </ul>
+    <p>Recoverable import IGST should remain separate from inventory cost.</p>
+    <div class="callout warn">
+      <b>Without landed cost</b>
+      Product costs may be understated and gross margins may appear higher than the actual economic margins.
+    </div>
+  </section>
+
+  <section id="phase-5">
+    <h2>7. Phase 5 – Foreign Vendor Payment</h2>
+    <p>Two payment scenarios are supported.</p>
+
+    <h3>7.1 Case A – Payment from an INR bank account</h3>
+    <p>This is the most common scenario when the company does not maintain a foreign currency bank account.</p>
+    <ol>
+      <li>Open the EUR vendor bill.</li>
+      <li>Select <b>Register Payment</b>.</li>
+      <li>Configure the payment to reflect the actual INR bank transaction.</li>
+      <li>Enter the INR amount actually debited by the bank.</li>
+      <li>Select the applicable INR bank journal.</li>
+      <li>Complete the payment and reconciliation using the configured Odoo payment workflow.</li>
+      <li>Verify that the bill is fully settled in EUR.</li>
+      <li>Verify the exchange gain/loss journal entry.</li>
+    </ol>
+    <p>The difference between the bill-date INR liability and the actual INR settlement amount should be recognised as a realised exchange difference.</p>
+    <table>
+      <caption>Illustration</caption>
+      <thead>
+        <tr><th scope="col">Particulars</th><th scope="col">Amount</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Vendor bill</td><td>EUR 1,000</td></tr>
+        <tr><td>Bill-date INR value</td><td>₹92,500</td></tr>
+        <tr><td>Actual bank debit</td><td>₹93,100</td></tr>
+        <tr><td>Exchange loss</td><td>₹600</td></tr>
+      </tbody>
+    </table>
+    <p>The foreign vendor bill is settled for EUR 1,000. Bank charges for international remittance should be recorded separately under the appropriate bank charges expense account.</p>
+    <div class="callout warn">
+      <b>Important implementation note</b>
+      The exact Register Payment options and reconciliation behaviour depend on the installed Odoo version, accounting localisation and payment configuration. The INR settlement workflow must be tested on staging before production use. Do not assume that selecting <strong>Mark as Fully Paid</strong> alone guarantees the correct exchange difference posting.
+    </div>
+
+    <h3>7.2 Case B – Payment from a EUR / EEFC bank account</h3>
+    <p>Where the company maintains a EUR bank account:</p>
+    <ol>
+      <li>Open the EUR vendor bill.</li>
+      <li>Select <b>Register Payment</b>.</li>
+      <li>Select the EUR bank journal.</li>
+      <li>Enter the payment in EUR.</li>
+      <li>Confirm and reconcile the payment.</li>
+    </ol>
+    <p>Odoo calculates the realised exchange gain or loss by comparing the bill-date and payment-date accounting values. The corresponding accounting entries are posted using the configured exchange difference accounts.</p>
+  </section>
+
+  <section id="phase-6">
+    <h2>8. Phase 6 – Month-End Foreign Currency Revaluation</h2>
+    <p>Foreign currency vendor bills that remain unpaid at month-end must be evaluated at the applicable closing exchange rate.</p>
+    <p><b>Navigation:</b> Accounting &rarr; Reporting &rarr; Unrealized Currency Gains/Losses</p>
+    <ol>
+      <li>Open the Unrealized Currency Gains/Losses report.</li>
+      <li>Review outstanding foreign currency balances.</li>
+      <li>Verify the closing exchange rate.</li>
+      <li>Select the relevant revaluation adjustment option.</li>
+      <li>Review the proposed journal entry.</li>
+      <li>Post the adjustment.</li>
+      <li>Verify the reversing entry in the subsequent period.</li>
+    </ol>
+
+    <h3>8.1 Purpose of revaluation</h3>
+    <p>The purpose is to ensure that outstanding EUR liabilities are reflected at the applicable reporting-date exchange rate. The resulting difference is recognised as an unrealised foreign exchange gain or loss.</p>
+    <p>This adjustment is separate from the realised exchange difference generated when the vendor bill is actually paid.</p>
+  </section>
+
+  <section id="conclusion">
+    <h2>9. Final Conclusion</h2>
+    <p>Odoo supports foreign currency procurement for an Indian company using INR as its company currency. The key principle is that the vendor-facing commercial transaction remains in EUR, while the company's accounting, inventory valuation and financial reporting remain in INR.</p>
+    <p>The most important implementation requirements are:</p>
+    <ul>
+      <li>Correct EUR currency and exchange-rate configuration.</li>
+      <li>Correct foreign vendor and vendor pricelist setup.</li>
+      <li>Proper bill-date and payment-date exchange-rate handling.</li>
+      <li>Separate accounting for customs duties and import IGST.</li>
+      <li>Accurate landed-cost allocation.</li>
+      <li>Correct foreign exchange gain/loss recognition.</li>
+      <li>Proper handling of mixed-currency management reports.</li>
+    </ul>
+    <p>For Harleys, the main areas requiring specific validation are Indent-to-PO currency inheritance, payment reconciliation behaviour and the Purchase Order reporting issue.</p>
+    <div class="callout">
+      <b>Final recommendation</b>
+      Complete all six staging test cases and obtain Finance, Purchase and ERP team sign-off before enabling the process for production transactions.
+    </div>
+  </section>
+
+  <section id="governance">
+    <h2>10. Document Governance</h2>
+    <table>
+      <thead>
+        <tr><th scope="col">Particular</th><th scope="col">Details</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Document Title</td><td>EUR Purchase Order Process in Odoo – Indian INR Company</td></tr>
+        <tr><td>Document Type</td><td>Standard Operating Procedure</td></tr>
+        <tr><td>Organisation</td><td>Harleys</td></tr>
+        <tr><td>Version</td><td>1.0</td></tr>
+        <tr><td>Status</td><td>Draft – Subject to Staging Validation</td></tr>
+        <tr><td>Process Owner</td><td>Finance / Purchase</td></tr>
+        <tr><td>Technical Owner</td><td>ERP Team</td></tr>
+        <tr><td>Review Frequency</td><td>Whenever Odoo configuration or process changes</td></tr>
+        <tr><td>Approval</td><td>Finance Head / Management</td></tr>
+      </tbody>
+    </table>
+    <div class="callout warn">
+      <b>Disclaimer</b>
+      This SOP documents the proposed operational and accounting workflow based on the supplied process description and code-review observations. Final accounting entries, GST treatment, customs valuation and exchange-rate policies must be validated against applicable Indian regulations, the company's accounting policy and the installed Odoo version.
+    </div>
+  </section>
+
+  <footer>
+    User guide — Harleys Odoo 19 Enterprise. <a href="exchange-rate-sop.docx">Download the source SOP (Word)</a>.
+  </footer>
+
+</div>
+<script type="module" src="../assets/scripts/main.js"></script>
+</body>
+</html>
