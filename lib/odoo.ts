@@ -41,14 +41,18 @@ export type DailyUpdates = {
 const TIMEOUT_MS = 10_000; // a dead ngrok tunnel must fail fast, not hang the page
 
 export async function fetchDailyUpdates(date?: string): Promise<DailyUpdates> {
+  return getJson<DailyUpdates>('/harleys/daily-updates', date ? { date } : {});
+}
+
+async function getJson<T>(path: string, params: Record<string, string>): Promise<T> {
   const base = process.env.ODOO_URL;
   const token = process.env.HARLEYS_PORTAL_TOKEN;
   if (!base || !token) throw new OdooError('not_configured', 'ODOO_URL / HARLEYS_PORTAL_TOKEN not set');
 
   const db = process.env.ODOO_DB; // needed once the server holds more than one database
 
-  const url = new URL('/harleys/daily-updates', base);
-  if (date) url.searchParams.set('date', date);
+  const url = new URL(path, base);
+  for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
 
   let res: Response;
   try {
@@ -67,7 +71,7 @@ export async function fetchDailyUpdates(date?: string): Promise<DailyUpdates> {
   if (res.status === 401 || res.status === 403) throw new OdooError('forbidden', 'Odoo rejected the portal token');
   if (!res.ok) throw new OdooError(res.status >= 500 ? 'unreachable' : 'bad_response', `Odoo answered HTTP ${res.status}`);
   try {
-    return (await res.json()) as DailyUpdates;
+    return (await res.json()) as T;
   } catch {
     throw new OdooError('bad_response', 'Odoo answered with something that is not JSON');
   }

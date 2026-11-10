@@ -3,7 +3,7 @@
    --------------------------------------------------------------------------
    Entry point, loaded as <script type="module">. Each concern lives in its
    own file under modules/ — this file only wires them together and boots
-   the page. index.html only ever references this one file.
+   the page. odoo.html only ever references this one file.
    ========================================================================== */
 import { loadConfig } from './modules/config-loader.js';
 import { startClock } from './modules/clock.js';
@@ -11,14 +11,18 @@ import { renderApplications, renderInfoCards } from './modules/cards.js';
 import { renderUpdates } from './modules/updates.js';
 import { applyBrand } from './modules/brand.js';
 import { renderEnvNavLinks, renderHeroActions } from './modules/environments.js';
+import { renderSidebar, initSidebarToggle, renderToday } from './modules/sidebar.js';
 
 async function init() {
   startClock();
+  renderToday();
+  initSidebarToggle();
 
   const loader = document.getElementById('page-loader');
   try {
     const config = await loadConfig();
     applyBrand(config.brand);
+    renderSidebar(config);
 
     const environments = config.brand?.environments || [];
     renderEnvNavLinks(document.getElementById('env-links'), environments);

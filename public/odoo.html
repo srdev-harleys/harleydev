@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Served at /odoo (and /odoo/): every relative URL below and in scripts/ resolves from the site root. -->
+  <base href="/" />
+
+  <title>Harley's · Odoo workspace</title>
+  <meta name="description" content="Internal Odoo workspace for Harleys Fine Baking staff: environments, apps and updates." />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#F5D1D8" />
+
+  <link rel="icon" type="image/png" href="assets/favicon.png" />
+  <link rel="apple-touch-icon" href="assets/favicon.png" />
+
+  <!-- Body text is Arial (harleys.com's default); Montserrat for headings. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- STYLES — see styles/ (portal-layout.css is this page's own partial). -->
+  <link rel="stylesheet" href="styles/main.css" />
+</head>
+
+<body class="portal">
+  <div id="page-loader" class="page-loader" role="status" aria-label="Loading">
+    <div class="loader-spinner" aria-hidden="true"></div>
+    <span class="loader-text">Loading workspace…</span>
+  </div>
+
+  <div class="bg-gradient" aria-hidden="true"></div>
+
+  <!-- ============================================================
+       COMPACT HEADER
+       ============================================================ -->
+  <header class="topnav portal-top" role="banner">
+    <div class="topnav__brand">
+      <button type="button" class="portal-menu" id="portal-menu" aria-controls="portal-side" aria-expanded="false" aria-label="Quick links">
+        <span></span><span></span><span></span>
+      </button>
+      <span class="topnav__title">Harley's <span class="portal-top__dot">·</span> <span class="portal-top__odoo">Odoo</span></span>
+      <span class="env-badge" id="env-badge">Testing</span>
+    </div>
+    <nav class="topnav__nav portal-top__nav" aria-label="Site">
+      <a class="topnav__link" href="updates">Daily Updates</a>
+      <a class="topnav__link" href="docs/index.html">Docs</a>
+    </nav>
+    <div class="topnav__right">
+      <time class="clock" id="clock" datetime="" aria-label="Current date and time">--:--:--</time>
+    </div>
+  </header>
+
+  <div class="portal-shell">
+    <!-- ============================================================
+         QUICK-ACCESS SIDEBAR (links built from config.json by sidebar.js)
+         ============================================================ -->
+    <aside class="portal-side" id="portal-side" aria-label="Quick access">
+      <div class="portal-side__group">
+        <h2 class="portal-side__label">Environments</h2>
+        <ul id="side-envs"></ul>
+      </div>
+      <div class="portal-side__group">
+        <h2 class="portal-side__label">Apps</h2>
+        <ul id="side-apps"></ul>
+      </div>
+    </aside>
+
+    <!-- ============================================================
+         MAIN CONTENT
+         ============================================================ -->
+    <main class="page portal-main" id="main" role="main">
+      <section class="portal-intro" aria-labelledby="hero-title">
+        <div>
+          <h1 class="portal-intro__title" id="hero-title">Odoo workspace</h1>
+          <p class="portal-intro__desc" id="hero-desc">Environments, apps and team news for Harleys Fine Baking staff.</p>
+        </div>
+        <p class="portal-intro__date" id="portal-date"></p>
+      </section>
+
+      <section class="apps" aria-labelledby="apps-title">
+        <h2 class="section-title" id="apps-title">Environments &amp; applications</h2>
+        <p class="section-subtitle">Each opens in a new tab.</p>
+        <div class="apps__grid" id="apps-grid" role="list">
+          <!-- Cards injected by scripts/main.js -->
+        </div>
+      </section>
+
+      <div class="portal-cols">
+        <section class="updates portal-panel" aria-labelledby="updates-title">
+          <div class="portal-panel__head">
+            <h2 class="section-title" id="updates-title">Events &amp; updates</h2>
+            <a class="portal-panel__more" href="updates">Daily Updates →</a>
+          </div>
+          <div class="updates__list" id="updates-list" role="list">
+            <!-- Items injected by scripts/main.js -->
+          </div>
+        </section>
+      </div>
+
+      <section class="info" aria-labelledby="info-title">
+        <h2 class="section-title" id="info-title">Environment information</h2>
+        <div class="info__grid" id="info-grid" role="list">
+          <!-- Cards injected by scripts/main.js -->
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer class="footer" role="contentinfo">
+    <div class="footer__brand">
+      <span class="footer__company">Harleys Fine Baking</span>
+      <span class="footer__platform">Odoo workspace</span>
+    </div>
+    <div class="footer__meta">
+      <span id="footer-powered">Powered by Odoo 19 Enterprise</span>
+      <span class="footer__dot" aria-hidden="true">•</span>
+      <span id="footer-notice">Designed for Internal Use Only</span>
+    </div>
+  </footer>
+
+  <!-- SCRIPTS — ES modules, no external libraries; see scripts/modules/. -->
+  <script type="module" src="scripts/main.js"></script>
+</body>
+</html>
