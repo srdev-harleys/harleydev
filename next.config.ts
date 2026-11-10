@@ -9,16 +9,16 @@ const production = (process.env.GRN_ODOO_URL || 'https://harleys.odoo.com').repl
 const environments: { grn?: string; url: string }[] =
   JSON.parse(readFileSync(join(process.cwd(), 'public/config.json'), 'utf8')).brand.environments;
 
-// / is the corporate site (app/(site)). The Odoo portal, updates page and docs are plain static
-// files under public/; these rewrites only give the HTML pages their clean URLs.
+// The launcher and docs are plain static files under public/, served as they were before
+// Next.js; these rewrites only give the HTML pages their clean URLs. The customers' ordering site
+// is its own project (harleys_custom_orders).
 const nextConfig: NextConfig = {
   // /app/ must stay /app/: it is the web app's scope, so an installed shortcut opens without a URL bar.
   skipTrailingSlashRedirect: true,
   devIndicators: false, // no Next.js badge on the pages while testing
   async rewrites() {
     return [
-      { source: '/odoo', destination: '/odoo.html' },
-      { source: '/odoo/', destination: '/odoo.html' },
+      { source: '/', destination: '/index.html' },
       { source: '/updates', destination: '/updates.html' },
       { source: '/app', destination: '/app/index.html' },
       { source: '/app/', destination: '/app/index.html' },

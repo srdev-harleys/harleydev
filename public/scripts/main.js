@@ -3,7 +3,7 @@
    --------------------------------------------------------------------------
    Entry point, loaded as <script type="module">. Each concern lives in its
    own file under modules/ — this file only wires them together and boots
-   the page. odoo.html only ever references this one file.
+   the page. index.html only ever references this one file.
    ========================================================================== */
 import { loadConfig } from './modules/config-loader.js';
 import { startClock } from './modules/clock.js';
