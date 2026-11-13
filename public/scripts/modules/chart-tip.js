@@ -29,12 +29,14 @@ function hide() {
   if (tip) tip.hidden = true;
 }
 
-/* Give a mark a tooltip on hover and keyboard focus. */
-export function attachTip(el, value, label) {
-  el.tabIndex = 0;
+/* Give a mark a tooltip on hover and keyboard focus. focusable: false = hover only, for dense
+   grids whose cells already carry their text (one tab stop per cell would be a trap). */
+export function attachTip(el, value, label, { focusable = true } = {}) {
   el.setAttribute('aria-label', `${label}: ${value}`);
   el.addEventListener('pointermove', (e) => show(value, label, e.clientX, e.clientY));
   el.addEventListener('pointerleave', hide);
+  if (!focusable) return;
+  el.tabIndex = 0;
   el.addEventListener('focus', () => {
     const r = el.getBoundingClientRect();
     show(value, label, r.left + r.width / 2, r.top);

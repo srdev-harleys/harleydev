@@ -48,6 +48,14 @@
       "featured": false
     },
     {
+      "name": "Hygiene Audit",
+      "url": "audit",
+      "icon": "board",
+      "status": "Online",
+      "environment": "Outlet audit ranking · live from the audit Google Sheet",
+      "featured": false
+    },
+    {
       "name": "Documentation Hub",
       "url": "docs/index.html",
       "icon": "docs",

@@ -20,6 +20,7 @@ const nextConfig: NextConfig = {
     return [
       { source: '/', destination: '/index.html' },
       { source: '/updates', destination: '/updates.html' },
+      { source: '/audit', destination: '/audit.html' },
       { source: '/app', destination: '/app/index.html' },
       { source: '/app/', destination: '/app/index.html' },
       // The app's API only, on this site's own origin: no CORS, and Odoo needs no change.

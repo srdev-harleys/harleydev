@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hygiene Audit — Harleys Fine Baking ODOO DEV</title>
+  <meta name="description" content="Monthly outlet hygiene ranking — audits, online ratings and OptiPulse — live from the audit Google Sheet." />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#F5D1D8" />
+
+  <link rel="icon" type="image/png" href="assets/favicon.png" />
+  <link rel="apple-touch-icon" href="assets/favicon.png" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Imperial+Script&display=swap" rel="stylesheet" />
+
+  <!-- The portal's stylesheet, then this page's own (loaded here only, so no other page can be
+       restyled by it). accessibility.css again: its focus ring stays last, as it is in main.css. -->
+  <link rel="stylesheet" href="styles/main.css" />
+  <link rel="stylesheet" href="styles/audit.css" />
+  <link rel="stylesheet" href="styles/accessibility.css" />
+</head>
+
+<body>
+  <div id="page-loader" class="page-loader" role="status" aria-label="Loading">
+    <div class="loader-spinner" aria-hidden="true"></div>
+    <span class="loader-text">Reading the audit sheet…</span>
+  </div>
+
+  <div class="bg-gradient" aria-hidden="true"></div>
+  <div class="bg-grid" aria-hidden="true"></div>
+
+  <header class="topnav" role="banner">
+    <div class="topnav__brand">
+      <img src="assets/logo.png" alt="Harleys Fine Baking logo" class="topnav__logo" width="36" height="36" />
+      <span class="topnav__title">Harleys Fine Baking ODOO DEV</span>
+      <span class="env-badge" id="env-badge">Testing</span>
+    </div>
+    <nav class="topnav__nav" aria-label="Site">
+      <a class="topnav__link" href="./">Home</a>
+      <a class="topnav__link" href="updates">Daily Updates</a>
+      <a class="topnav__link" href="docs/index.html">Documentation</a>
+    </nav>
+    <div class="topnav__right">
+      <time class="clock" id="clock" datetime="" aria-label="Current date and time">--:--:--</time>
+    </div>
+  </header>
+
+  <main class="page page--wide" id="main" role="main">
+    <!-- ----------------------------------------------------------
+         TITLE + FILTERS (they scope everything below)
+         ---------------------------------------------------------- -->
+    <div class="daily-head">
+      <div>
+        <h1 class="daily-head__title">Hygiene Audit</h1>
+        <p class="section-subtitle" id="audit-summary">Loading…</p>
+      </div>
+      <div class="daily__controls audit-controls">
+        <label class="audit-field">
+          <span>Month</span>
+          <select id="f-month" class="audit-select"></select>
+        </label>
+        <label class="audit-field">
+          <span>City</span>
+          <select id="f-city" class="audit-select"></select>
+        </label>
+        <div class="segmented" role="group" aria-label="Outlet type" id="f-type">
+          <button type="button" class="segmented__btn" data-type="all" aria-pressed="true">All</button>
+          <button type="button" class="segmented__btn" data-type="Cloud Kitchen" aria-pressed="false">Cloud Kitchen</button>
+          <button type="button" class="segmented__btn" data-type="PO" aria-pressed="false">PO</button>
+        </div>
+        <input type="search" id="f-search" class="audit-search" placeholder="Find outlet  /" aria-label="Find outlet" autocomplete="off" />
+      </div>
+    </div>
+
+    <!-- Live status: how fresh the numbers are, and the last sheet edit -->
+    <div class="live-bar" id="live-bar" data-state="connecting">
+      <span class="live-bar__dot" aria-hidden="true"></span>
+      <span class="live-bar__text" id="live-text" role="status" aria-live="polite">Connecting…</span>
+      <span class="live-bar__edit" id="live-edit"></span>
+      <span class="live-bar__actions">
+        <button type="button" class="chip-btn" id="btn-refresh" title="Read the sheet now">Refresh</button>
+        <button type="button" class="chip-btn" id="btn-export" title="Download this leaderboard as CSV">Export CSV</button>
+        <a class="chip-btn" id="btn-sheet" href="#" target="_blank" rel="noopener">Open sheet ↗</a>
+      </span>
+    </div>
+
+    <div id="audit-body">
+      <nav class="jump" aria-label="Sections">
+        <a href="#board-title">Leaderboard</a>
+        <a href="#missed-title">Checkpoints</a>
+        <a href="#log-title">Audit log</a>
+        <a href="#ratings-title">Online ratings</a>
+        <a href="#op-title">OptiPulse</a>
+        <a href="#dir-title">Outlets &amp; brands</a>
+        <a href="#health-title">Data health</a>
+        <a href="#how-title">How it's scored</a>
+      </nav>
+
+      <section class="daily-section" aria-label="Key numbers">
+        <div class="kpis" id="kpis"></div>
+      </section>
+
+      <section class="daily-section" aria-labelledby="board-title">
+        <div class="section-head">
+          <div>
+            <h2 class="daily-section__title" id="board-title">Leaderboard</h2>
+            <p class="daily-section__hint">Ranked within each outlet type, as the Audit Summary does. Select an outlet for its audits, ratings and OptiPulse.</p>
+            <p class="src-line">From <a class="src" data-src="Audit Summary" href="#" target="_blank" rel="noopener">Audit Summary</a></p>
+          </div>
+          <ul class="legend" aria-label="Score parts">
+            <li><span class="legend__swatch" style="background:var(--viz-audit)"></span>Audit <small>/80</small></li>
+            <li><span class="legend__swatch" style="background:var(--viz-rating)"></span>Rating trend <small>/10</small></li>
+            <li><span class="legend__swatch" style="background:var(--viz-op)"></span>OptiPulse <small>/10</small></li>
+          </ul>
+        </div>
+        <div class="boards" id="boards"></div>
+      </section>
+
+      <section class="daily-section" aria-labelledby="missed-title">
+        <h2 class="daily-section__title" id="missed-title">Where points are lost</h2>
+        <p class="daily-section__hint">Checkpoints with the most points missed across this month's audits, then every outlet against every checkpoint.</p>
+        <p class="src-line">From <a class="src" data-src="Cloud-Audit Entry Report" href="#" target="_blank" rel="noopener">Cloud-Audit Entry Report</a> <a class="src" data-src="PO-Audit Entry Report" href="#" target="_blank" rel="noopener">PO-Audit Entry Report</a></p>
+        <div class="missed-layout">
+          <article class="panel" aria-labelledby="missed-list-title">
+            <h3 class="panel__title" id="missed-list-title">Most missed checkpoints</h3>
+            <ol class="missed" id="missed"></ol>
+          </article>
+          <div id="heatmaps" class="heatmaps"></div>
+        </div>
+      </section>
+
+      <section class="daily-section" aria-labelledby="log-title">
+        <h2 class="daily-section__title" id="log-title">Audit log</h2>
+        <p class="daily-section__hint" id="log-hint"></p>
+        <p class="src-line">From <a class="src" data-src="Cloud-Audit Entry Report" href="#" target="_blank" rel="noopener">Cloud-Audit Entry Report</a> <a class="src" data-src="PO-Audit Entry Report" href="#" target="_blank" rel="noopener">PO-Audit Entry Report</a></p>
+        <article class="panel panel--table" id="log"></article>
+      </section>
+
+      <section class="daily-section" aria-labelledby="ratings-title">
+        <h2 class="daily-section__title" id="ratings-title">Online ratings</h2>
+        <p class="daily-section__hint" id="ratings-hint"></p>
+        <p class="src-line">From <a class="src" data-src="Ratings" href="#" target="_blank" rel="noopener">Ratings</a> <a class="src" data-src="Sheet11" href="#" target="_blank" rel="noopener">Sheet11</a> <a class="src" data-src="Sheet6" href="#" target="_blank" rel="noopener">Sheet6</a></p>
+        <article class="panel panel--table" id="ratings"></article>
+      </section>
+
+      <section class="daily-section" aria-labelledby="op-title">
+        <h2 class="daily-section__title" id="op-title">OptiPulse</h2>
+        <p class="daily-section__hint" id="op-hint"></p>
+        <p class="src-line">From <a class="src" data-src="OP" href="#" target="_blank" rel="noopener">OP</a></p>
+        <article class="panel panel--table" id="optipulse"></article>
+      </section>
+
+      <section class="daily-section" aria-labelledby="dir-title">
+        <div class="section-head">
+          <div>
+            <h2 class="daily-section__title" id="dir-title">Outlets &amp; brands</h2>
+            <p class="daily-section__hint" id="dir-hint"></p>
+            <p class="src-line">From <a class="src" data-src="Supporting" href="#" target="_blank" rel="noopener">Supporting</a> <a class="src" data-src="OR" href="#" target="_blank" rel="noopener">OR</a></p>
+          </div>
+          <label class="audit-field">
+            <span>City</span>
+            <select id="f-dir-city" class="audit-select"></select>
+          </label>
+        </div>
+        <article class="panel panel--table" id="directory"></article>
+      </section>
+
+      <section class="daily-section" aria-labelledby="health-title">
+        <div class="section-head">
+          <div>
+            <h2 class="daily-section__title" id="health-title">Data health</h2>
+            <p class="daily-section__hint">Cells in the sheet that disagree with what their inputs add up to, and gaps that cost outlets points.</p>
+            <p class="src-line">From every tab</p>
+          </div>
+          <div class="segmented" role="group" aria-label="Issue severity" id="f-severity">
+            <button type="button" class="segmented__btn" data-severity="all" aria-pressed="true">All</button>
+            <button type="button" class="segmented__btn" data-severity="error" aria-pressed="false">Errors</button>
+            <button type="button" class="segmented__btn" data-severity="warning" aria-pressed="false">Warnings</button>
+            <button type="button" class="segmented__btn" data-severity="info" aria-pressed="false">Notes</button>
+          </div>
+        </div>
+        <ul class="issues panel" id="issues"></ul>
+      </section>
+
+      <section class="daily-section" aria-labelledby="how-title">
+        <h2 class="daily-section__title" id="how-title">How the score is calculated</h2>
+        <details class="panel how">
+          <summary>The sheet's formulas, and what this dashboard does with each</summary>
+          <div class="how__body">
+            <p>Final score (out of 100) = <strong>audit average × 80%</strong> + <strong>rating trend</strong> (10) + <strong>OptiPulse ÷ 10</strong> (10). Outlets are ranked separately as Cloud Kitchen and PO. For the month the Audit Summary is set to, the dashboard shows the Summary's numbers exactly as the sheet shows them, including numbers typed over a formula. It also recomputes every score from the raw entries and lists any Summary cell that disagrees under Data health. Other months come from the raw entries.</p>
+            <div class="team-table__scroll">
+              <table class="how__table">
+                <thead><tr><th>Tab · cell</th><th>Sheet formula</th><th>Meaning</th><th>Dashboard</th></tr></thead>
+                <tbody>
+                  <tr><td>Cloud / PO Entry · Y</td><td><code>REGEXEXTRACT(E…V, "\d+")</code> summed</td><td>Audit total: the number in each of the 18 "Compliant (n)" dropdowns. Six sections weigh 15/25/20/20/10/10.</td><td>Same sum, but blank checkpoints count as 0 instead of zeroing the whole audit; missing formulas (Kondapur, Y15:Y28) don't matter.</td></tr>
+                  <tr><td>Audit Summary · C</td><td><code>COUNTUNIQUEIFS(Date, Location, City, Month)</code></td><td>Number of audits, counted as distinct dates.</td><td>Counts audit rows, so two audits on one day both count.</td></tr>
+                  <tr><td>Audit Summary · E, F</td><td><code>SUMIFS(Y)/C</code>, <code>E*80%</code></td><td>Average audit score, scaled to 80.</td><td>Same.</td></tr>
+                  <tr><td>Audit Summary · G</td><td><code>SUMIFS(Ratings!J, ODN)/2</code></td><td>Rating trend: up 10, flat 5, down 0 per aggregator, two aggregators, out of 10.</td><td>Same rule, from the snapshots: last one in the month vs last one before it (27 Sep vs 31 Aug for Sep 2026). Works for any month.</td></tr>
+                  <tr><td>Ratings · F, G, J</td><td><code>VLOOKUP(ResID, Sheet11, 9)</code>, typed, typed</td><td>End / start rating and the 10/5/0 score; G and J are typed by hand.</td><td>Read from Sheet11 and Sheet6 by date, not by column number; typed scores that don't match are flagged.</td></tr>
+                  <tr><td>Audit Summary · H</td><td><code>SUMIFS(OP!C, OP!B)/10</code></td><td>OptiPulse score (0–100) scaled to 10.</td><td>Same. OP!B is <code>VLOOKUP(OP!A, Sheet6!B:D, 3)</code>.</td></tr>
+                  <tr><td>Audit Summary · I, J</td><td><code>F+G+H</code>, <code>COUNTIFS(type, I&gt;this)+1</code></td><td>Total and rank within type.</td><td>Same; outlets without an audit get "Not audited" instead of <code>#VALUE!</code> and are not ranked.</td></tr>
+                  <tr><td>Sheet11, Sheet6</td><td>pasted</td><td>Weekly Swiggy/Zomato rating snapshots (Sheet6: Aug; Sheet11: 27 Sep onwards) and the ResID → outlet lists.</td><td>Every snapshot is drawn under Online ratings; the month's pair gives the rating score.</td></tr>
+                  <tr><td>Supporting</td><td>lists</td><td>Outlet master (city, address, lat/long) and the Month/Date dropdown sources.</td><td>City, address and map link. Its first 12 dates were typed mm-dd and stored as 9 Jan…9 Dec; the dashboard reads them back as 1–12 Sep.</td></tr>
+                  <tr><td>OR</td><td><code>IMPORTRANGE(Repository)</code></td><td>Company outlet repository: one row per brand per kitchen, all cities.</td><td>Not used by any score. Shown under Outlets &amp; brands (brands, Swiggy/Zomato status, hours, cost for two) and links rating rows that have no ODN. Commission, payment and phone columns are left out.</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="how__note">The header cells H1:J2 list weights 50/25/25, but no formula reads them; the dashboard follows the formulas (80/10/10).</p>
+          </div>
+        </details>
+      </section>
+    </div>
+  </main>
+
+  <!-- Outlet detail -->
+  <div class="drawer-backdrop" id="drawer-backdrop" hidden></div>
+  <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title" hidden tabindex="-1">
+    <div class="drawer__head">
+      <div>
+        <p class="drawer__eyebrow" id="drawer-eyebrow"></p>
+        <h2 class="drawer__title" id="drawer-title"></h2>
+      </div>
+      <button type="button" class="drawer__close" id="drawer-close" aria-label="Close">✕</button>
+    </div>
+    <div class="drawer__body" id="drawer-body"></div>
+  </aside>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+  <div class="chart-tip" id="chart-tip" role="tooltip" hidden></div>
+
+  <footer class="footer" role="contentinfo">
+    <div class="footer__brand">
+      <span class="footer__company">Harleys Fine Baking</span>
+      <span class="footer__platform">ODOO DEV Platform</span>
+    </div>
+    <div class="footer__meta">
+      <span>Live from the Hygiene Audit Google Sheet</span>
+      <span class="footer__dot" aria-hidden="true">•</span>
+      <span id="footer-notice">Designed for Internal Use Only</span>
+    </div>
+  </footer>
+
+  <script type="module" src="scripts/audit-page.js"></script>
+</body>
+</html>

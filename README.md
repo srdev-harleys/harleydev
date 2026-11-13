@@ -141,6 +141,91 @@ npx serve .
 > `<script type="module">` in `index.html` are blocked on `file://` by browsers. On
 > Vercel (or any static host) this works out of the box.
 
+## Hygiene Audit dashboard (`/audit`)
+
+Monthly outlet ranking recomputed from the audit Google Sheet: audit × 80% + rating trend (10)
++ OptiPulse (10), ranked per Cloud Kitchen / PO, with every tab of the sheet on the page and a
+Data health list of sheet cells that disagree with their inputs.
+
+| Piece | File |
+|---|---|
+| Scoring (mirrors the sheet's formulas; the Audit Summary's month shows the Summary's own numbers) | `lib/audit/compute.ts` |
+| Sheet reading, push intake, sync rules, shared store (Upstash Redis or a local file) | `lib/audit/source.ts` |
+| Check for both, Google and Redis mocked | `node lib/audit/audit.check.mjs` |
+| API: `/api/audit` (data), `/api/audit/status` (version, polled), `/api/audit/webhook` (sheet push) | `app/api/audit/[[...path]]/route.ts` |
+| Page | `public/audit.html`, `public/scripts/audit-page.js`, `public/scripts/modules/audit-views.js`, `public/styles/audit.css` |
+| Sheet trigger (Apps Script) | `scripts/audit-sheet-trigger.gs` |
+| Public address for the trigger, local only (cloudflared quick tunnel, webhook-only gate) | `scripts/audit-tunnel.mjs` |
+
+The API is stateless, like `/api/updates`. The newest data lives in a store that every server
+instance reads, so the same code runs on one local server and on Vercel:
+
+```
+Sheet edit ─▶ Apps Script ─▶ POST /api/audit/webhook ─▶ store ◀─ CSV pull (fallback)
+                                                          │
+                      page ─ every 10 s ─▶ /api/audit/status (version) ─▶ /api/audit when it changed
+```
+
+1. **Push.** The sheet's installable `onEdit`/`onChange` triggers POST the tabs to `/api/audit/webhook`
+   (`Authorization: Bearer $AUDIT_WEBHOOK_SECRET`). The server recomputes and saves to the store.
+2. **Poll.** While the tab is visible, the page asks `/api/audit/status` for the version every 10 s
+   (every minute after 30 min without input) and loads `/api/audit` only when it changed. Edits show up
+   within about 10 s locally and 15 s on Vercel, where the CDN answers repeat polls for 4 s (`s-maxage=4`).
+3. **Pull (fallback).** When a status check finds the data older than `AUDIT_POLL_SECONDS` (30 s), on
+   first load and on Refresh, the server re-reads the link-shared sheet's CSV export. Only one instance
+   reads at a time, through a lease in the store.
+
+The store is **Upstash Redis** when `KV_REST_API_URL` + `KV_REST_API_TOKEN` are set (the Vercel Upstash
+integration sets them; `UPSTASH_REDIS_REST_URL` / `_TOKEN` also work): REST through `fetch`, no client
+library, data gzipped (about 25 KB). Otherwise it is the **local file** `.data/audit-<sheet id>.json`
+(gitignored; `AUDIT_STORE_FILE` overrides), for one server; it survives restarts.
+
+What happens when something fails (`audit.check.mjs` runs these cases against both stores, with a
+second instance in a worker thread for Redis):
+- **Tunnel, trigger, or laptop offline.** Pushes stop; pulls keep the page within about 30 s of the sheet.
+- **Google unreachable, sheet made private, or HTTP 5xx.** The last good numbers stay and the status bar
+  shows the reason. 5xx and network errors are retried.
+- **Server restart or new Vercel instance.** The data comes from the store, so nothing is lost.
+- **Redis unreachable.** Page loads read the sheet directly (or serve the instance's last copy if Google
+  is down too), with the reason in the status bar. Pushes answer 502 until Redis is back.
+- **Pushes and pulls out of order.** Data only moves forward: a pull that started before the stored data
+  was read is dropped, a push older than the last push is dropped (by its `sentAt`), and pulls pause for
+  60 s after a push, because the CSV export trails edits.
+- **Page loses the server.** The status bar says so, the page keeps its numbers, and checks back off to
+  every 30 s. It catches up when the server answers, the tab becomes visible or the network comes back.
+- **Odd sheet content.** Columns are found by their headers, so an inserted column is fine. Blank, junk,
+  or missing tabs are reported under Data health and never crash the page (fuzz-tested).
+
+### Local demo
+
+```bash
+npm run dev                      # http://localhost:3000/audit (file store, works with pull only)
+node scripts/audit-tunnel.mjs    # needs cloudflared; prints https://….trycloudflare.com
+```
+In the sheet: Extensions → Apps Script → paste `scripts/audit-sheet-trigger.gs` → Save → reload the sheet →
+**Audit Dashboard → Connect dashboard…** → paste the tunnel address, then the secret from `.env.local`.
+The address changes each time `audit-tunnel.mjs` starts: run **Connect dashboard…** again with the new
+one (until then the page falls back to pulls). To run locally against the same Redis as Vercel, put its
+`KV_REST_API_URL` / `KV_REST_API_TOKEN` in `.env.local`; use a separate database to keep tests apart.
+
+### On Vercel
+
+1. Add the **Upstash Redis** integration (Storage / Marketplace) to the project; it sets
+   `KV_REST_API_URL` and `KV_REST_API_TOKEN`. Without it every instance keeps its own copy, so pushes
+   reach only some pages (the logs warn). Create the database in Mumbai (`ap-south-1`), next to the
+   functions (`bom1` in `vercel.json`).
+2. Set `AUDIT_WEBHOOK_SECRET` (and `AUDIT_SHEET_ID` for a different sheet) in the project's env vars.
+3. In the sheet, run **Connect dashboard…** with the production address, for example `https://<domain>`
+   (the script adds `/api/audit/webhook`). Not a preview URL: Vercel's deployment protection would answer
+   the trigger with 401.
+
+Usage, measured on the production build: a status check is 1 Redis command, a push 4, a sheet read
+4–7. One tab in use costs about 360 CDN requests and 840 Redis commands an hour; an idle tab about 60
+and 300. Open tabs share the CDN cache, so Redis use does not grow with viewers, but CDN requests do.
+Hobby includes 1M CDN requests and 1M function calls a month (a feature that runs out pauses for the
+rest of the 30 days) and Upstash free 500K commands. The API sets `maxDuration = 60`; a sheet read
+takes about 3 s.
+
 ## Deploy to Vercel
 
 This is a static site — import the repository into Vercel (or run `vercel`) with no
