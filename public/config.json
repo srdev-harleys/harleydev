@@ -28,7 +28,7 @@
       "download": "harleys-grn.apk",
       "icon": "phone",
       "status": "Online",
-      "environment": "Production · harleys.odoo.com · v4.0.0 · 19.9 MB",
+      "environment": "Production · harleys.odoo.com · v5.4.0 · 22.8 MB",
       "featured": true
     },
     {
@@ -82,6 +82,13 @@
     }
   ],
   "recentUpdates": [
+    {
+      "date": "2026-11-17",
+      "title": "Harley's GRN app v5.4.0: custom & bulk orders",
+      "description": "A new Orders tab: take customers' custom and bulk orders at the outlet, follow them from approval to pickup, and get an alert when an order changes. A copy button on the Orders tab copies the customers' ordering page link to share in their chat. Download and install over the old app; your setup and unsent changes stay.",
+      "link": "downloads/harleys-grn.apk",
+      "linkLabel": "Download v5.4.0"
+    },
     {
       "date": "2026-11-05",
       "title": "New Company Setup guide published",
